@@ -40,13 +40,20 @@ public static class MauiProgram
 			{
 				client.BaseAddress = new Uri(ApiEndpointOptions.BaseUrl);
 			})
+#if DEBUG
+			.ConfigurePrimaryHttpMessageHandler(ApiEndpointOptions.CreateDevHttpMessageHandler)
+#endif
 			.AddHttpMessageHandler<AuthDelegatingHandler>();
 
 		// Plain client used only for the silent refresh call, so it never recurses into itself.
 		builder.Services.AddHttpClient(ApiClientRegistration.RefreshClientName, client =>
 		{
 			client.BaseAddress = new Uri(ApiEndpointOptions.BaseUrl);
-		});
+		})
+#if DEBUG
+			.ConfigurePrimaryHttpMessageHandler(ApiEndpointOptions.CreateDevHttpMessageHandler)
+#endif
+			;
 
 #if DEBUG
 		builder.Services.AddBlazorWebViewDeveloperTools();
