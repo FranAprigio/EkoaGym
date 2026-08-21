@@ -99,6 +99,15 @@ CORS allowed origins for the mobile app are configured under `Cors:AllowedOrigin
 
 - `GET/POST/PUT/DELETE /api/plans` and `POST /api/plans/{id}/duplicate` — all scoped to the authenticated user. Unlike Goals/Profile (which 404 on another user's resource), attempting to read/modify **another user's plan returns 403** per this epic's acceptance criteria — an intentional inconsistency across epics, not a bug.
 - `POST`/`PUT` body: `{ name, exercises: [{ exerciseId, sets, reps, weightKg, restSeconds }, ...] }`. Exercise order is taken from array position (no separate `orderIndex` field to send); every `exerciseId` must reference an existing exercise (404 otherwise). `PUT` fully replaces the exercise list.
-- `GET /api/plans/{planId}/exercises/{exerciseId}/next-target` suggests the next session's `Sets`/`Reps`/`WeightKg` (progressive overload): if every set in the most recently logged session met or exceeded the planned reps/weight, it suggests `+Progression:WeightIncrementKg` (default 2.5kg, configurable in appsettings); otherwise it repeats the plan's current values. Returns the plan's own values if there's no session history yet.
-  - **Important**: this reads from a new `SessionSetLog` table that this epic added as a read-only prerequisite — there is no endpoint yet to *write* to it (that belongs to a future workout-session-logging epic). Until that exists, `next-target` will always fall back to "no history" and return the plan's planned values as-is.
+- `GET /api/plans/{planId}/exercises/{exerciseId}/next-target` suggests the next session's `Sets`/`Reps`/`WeightKg` (progressive overload): if every set in the most recently *completed* session met or exceeded the planned reps/weight, it suggests `+Progression:WeightIncrementKg` (default 2.5kg, configurable in appsettings); otherwise it repeats the plan's current values. Returns the plan's own values if there's no completed session history yet.
+
+## Workout sessions
+
+- `POST /api/sessions` — `{ planId }` → starts a session, returns `{ sessionId, planId, startedAt, exercises }` (the plan's exercise list to log against). 404/403 follow the same plan-ownership rules as `/api/plans`.
+- `POST /api/sessions/{id}/sets` — `{ exerciseId, setNumber, actualReps, actualWeightKg }` → appends a set log. 409 if the session is already completed; 404 if `exerciseId` isn't part of the session's plan.
+- `PUT /api/sessions/{id}/complete` — sets `EndedAt` (idempotent: calling it again on an already-completed session just returns the existing completion data, no error).
+- `GET /api/sessions` — paginated (`?page=`, `?pageSize=`), filterable by `?from=`/`?to=` (matched against `StartedAt`); returns summaries (plan name, start/end, duration, distinct exercise count, total volume = Σ actualReps × actualWeightKg).
+- `GET /api/sessions/{id}` — full set-by-set detail.
+- Session ownership uses **404** (not the 403 used by `/api/plans`) for another user's session — no 403 was requested for this epic, so it follows the more conservative "hide existence" default used by Goals/Profile instead.
+- This epic formalizes `WorkoutSession` as a real entity and reshapes `SessionSetLog` (added as a placeholder in the Workout Plans epic) to reference it via `SessionId` instead of loose `UserId`/`PlanId` columns, with `ActualReps`/`ActualWeightKg` field names — see migration `AddWorkoutSessions`.
 

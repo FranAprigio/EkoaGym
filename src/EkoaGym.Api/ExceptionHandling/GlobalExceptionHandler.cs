@@ -19,6 +19,8 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
             PlanNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("plan_not_found", exception.Message)),
             PlanAccessDeniedException => (StatusCodes.Status403Forbidden, new ApiErrorResponse("plan_access_denied", exception.Message)),
             PlanExerciseNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("plan_exercise_not_found", exception.Message)),
+            SessionNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("session_not_found", exception.Message)),
+            SessionAlreadyCompletedException => (StatusCodes.Status409Conflict, new ApiErrorResponse("session_already_completed", exception.Message)),
             _ => (StatusCodes.Status500InternalServerError, new ApiErrorResponse("internal_error", "An unexpected error occurred."))
         };
 

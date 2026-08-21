@@ -6,6 +6,7 @@ using EkoaGym.Application.Exercises;
 using EkoaGym.Application.Goals;
 using EkoaGym.Application.Plans;
 using EkoaGym.Application.Profiles;
+using EkoaGym.Application.Sessions;
 using EkoaGym.Domain.Entities;
 using EkoaGym.Infrastructure.Exercises;
 using EkoaGym.Infrastructure.Goals;
@@ -13,6 +14,7 @@ using EkoaGym.Infrastructure.Persistence;
 using EkoaGym.Infrastructure.Plans;
 using EkoaGym.Infrastructure.Profiles;
 using EkoaGym.Infrastructure.Security;
+using EkoaGym.Infrastructure.Sessions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -45,6 +47,7 @@ builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<IExerciseService, ExerciseService>();
 builder.Services.AddScoped<IWorkoutPlanService, WorkoutPlanService>();
 builder.Services.AddScoped<IProgressionService, ProgressionService>();
+builder.Services.AddScoped<IWorkoutSessionService, WorkoutSessionService>();
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

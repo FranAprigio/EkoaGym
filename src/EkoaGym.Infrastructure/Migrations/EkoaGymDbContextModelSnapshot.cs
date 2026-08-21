@@ -654,17 +654,17 @@ namespace EkoaGym.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("ActualReps")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ActualWeightKg")
+                        .HasColumnType("decimal(6,2)");
+
                     b.Property<DateTime>("CompletedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("ExerciseId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("PlanId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Reps")
-                        .HasColumnType("int");
 
                     b.Property<Guid>("SessionId")
                         .HasColumnType("uniqueidentifier");
@@ -672,19 +672,11 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.Property<int>("SetNumber")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("WeightKg")
-                        .HasColumnType("decimal(6,2)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ExerciseId");
 
-                    b.HasIndex("PlanId");
-
-                    b.HasIndex("UserId", "PlanId", "ExerciseId", "CompletedAt");
+                    b.HasIndex("SessionId", "ExerciseId");
 
                     b.ToTable("SessionSetLogs");
                 });
@@ -839,6 +831,39 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.ToTable("WorkoutPlanExercises");
                 });
 
+            modelBuilder.Entity("EkoaGym.Domain.Entities.WorkoutSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanId");
+
+                    b.HasIndex("UserId", "StartedAt");
+
+                    b.ToTable("WorkoutSessions");
+                });
+
             modelBuilder.Entity("EkoaGym.Domain.Entities.Goal", b =>
                 {
                     b.HasOne("EkoaGym.Domain.Entities.User", "User")
@@ -863,23 +888,21 @@ namespace EkoaGym.Infrastructure.Migrations
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.SessionSetLog", b =>
                 {
-                    b.HasOne("EkoaGym.Domain.Entities.Exercise", null)
+                    b.HasOne("EkoaGym.Domain.Entities.Exercise", "Exercise")
                         .WithMany()
                         .HasForeignKey("ExerciseId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("EkoaGym.Domain.Entities.WorkoutPlan", null)
+                    b.HasOne("EkoaGym.Domain.Entities.WorkoutSession", "Session")
                         .WithMany()
-                        .HasForeignKey("PlanId")
+                        .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("EkoaGym.Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                    b.Navigation("Exercise");
+
+                    b.Navigation("Session");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.UserProfile", b =>
@@ -921,6 +944,25 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.Navigation("Exercise");
 
                     b.Navigation("Plan");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.WorkoutSession", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.WorkoutPlan", "Plan")
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EkoaGym.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Plan");
+
+                    b.Navigation("User");
                 });
 #pragma warning restore 612, 618
         }

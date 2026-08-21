@@ -31,10 +31,13 @@ public class ProgressionService(EkoaGymDbContext dbContext, IOptions<Progression
             throw new PlanExerciseNotFoundException();
         }
 
-        // Most recent completed session for this plan/exercise combo, if any.
+        // Most recent *completed* session for this plan/exercise combo, if any.
         var latestSessionId = await dbContext.SessionSetLogs
-            .Where(s => s.UserId == userId && s.PlanId == planId && s.ExerciseId == exerciseId)
-            .OrderByDescending(s => s.CompletedAt)
+            .Where(s => s.ExerciseId == exerciseId
+                && s.Session.UserId == userId
+                && s.Session.PlanId == planId
+                && s.Session.EndedAt != null)
+            .OrderByDescending(s => s.Session.EndedAt)
             .Select(s => (Guid?)s.SessionId)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -45,11 +48,11 @@ public class ProgressionService(EkoaGymDbContext dbContext, IOptions<Progression
         }
 
         var lastSessionSets = await dbContext.SessionSetLogs
-            .Where(s => s.SessionId == latestSessionId.Value)
+            .Where(s => s.SessionId == latestSessionId.Value && s.ExerciseId == exerciseId)
             .ToListAsync(cancellationToken);
 
         var metOrExceededTarget = lastSessionSets.Count > 0
-            && lastSessionSets.All(s => s.Reps >= planExercise.Reps && s.WeightKg >= planExercise.WeightKg);
+            && lastSessionSets.All(s => s.ActualReps >= planExercise.Reps && s.ActualWeightKg >= planExercise.WeightKg);
 
         var suggestedWeightKg = metOrExceededTarget
             ? planExercise.WeightKg + _options.WeightIncrementKg

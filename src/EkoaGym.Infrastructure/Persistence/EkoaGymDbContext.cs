@@ -13,6 +13,7 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
     public DbSet<Exercise> Exercises => Set<Exercise>();
     public DbSet<WorkoutPlan> WorkoutPlans => Set<WorkoutPlan>();
     public DbSet<WorkoutPlanExercise> WorkoutPlanExercises => Set<WorkoutPlanExercise>();
+    public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
     public DbSet<SessionSetLog> SessionSetLogs => Set<SessionSetLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -104,21 +105,31 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<WorkoutSession>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+            entity.HasIndex(s => new { s.UserId, s.StartedAt });
+            entity.HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Restrict (not Cascade) to avoid a second cascade path alongside the direct User -> WorkoutSession FK above.
+            entity.HasOne(s => s.Plan)
+                .WithMany()
+                .HasForeignKey(s => s.PlanId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<SessionSetLog>(entity =>
         {
             entity.HasKey(s => s.Id);
-            entity.Property(s => s.WeightKg).HasColumnType("decimal(6,2)");
-            entity.HasIndex(s => new { s.UserId, s.PlanId, s.ExerciseId, s.CompletedAt });
-            // Restrict (not Cascade) to avoid a second cascade path to this table alongside User -> WorkoutPlan -> SessionSetLog.
-            entity.HasOne<User>()
+            entity.Property(s => s.ActualWeightKg).HasColumnType("decimal(6,2)");
+            entity.HasIndex(s => new { s.SessionId, s.ExerciseId });
+            entity.HasOne(s => s.Session)
                 .WithMany()
-                .HasForeignKey(s => s.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne<WorkoutPlan>()
-                .WithMany()
-                .HasForeignKey(s => s.PlanId)
+                .HasForeignKey(s => s.SessionId)
                 .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne<Exercise>()
+            entity.HasOne(s => s.Exercise)
                 .WithMany()
                 .HasForeignKey(s => s.ExerciseId)
                 .OnDelete(DeleteBehavior.Restrict);
