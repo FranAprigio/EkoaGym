@@ -3,5 +3,5 @@ using System.ComponentModel.DataAnnotations;
 namespace EkoaGym.Application.Plans;
 
 public record CreatePlanRequest(
-    [property: Required, StringLength(200, MinimumLength = 1)] string Name,
-    [property: Required, MinLength(1)] IReadOnlyList<PlanExerciseRequest> Exercises);
+    [Required, StringLength(200, MinimumLength = 1)] string Name,
+    [Required, MinLength(1)] IReadOnlyList<PlanExerciseRequest> Exercises);

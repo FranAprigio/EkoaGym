@@ -1,6 +1,7 @@
 using EkoaGym.Domain.Entities;
 using EkoaGym.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace EkoaGym.Infrastructure.Persistence;
 
@@ -17,6 +18,16 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
     public DbSet<SessionSetLog> SessionSetLogs => Set<SessionSetLog>();
     public DbSet<BodyMetricLog> BodyMetricLogs => Set<BodyMetricLog>();
     public DbSet<ProgressPhoto> ProgressPhotos => Set<ProgressPhoto>();
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        // All our DateTime values are UTC by convention (DateTime.UtcNow); SQL Server's datetime2 has no
+        // timezone info, so EF Core reads them back as Kind=Unspecified, which serializes without the "Z"
+        // suffix. Force Kind=Utc on read so JSON output is consistent whether the value came fresh from
+        // memory or was reloaded from the database.
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<NullableUtcDateTimeConverter>();
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -164,3 +175,11 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
         });
     }
 }
+
+file class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
+    v => v,
+    v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+file class NullableUtcDateTimeConverter() : ValueConverter<DateTime?, DateTime?>(
+    v => v,
+    v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
