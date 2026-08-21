@@ -1,0 +1,6 @@
+@EkoaGym.Api_HostAddress = http://localhost:5187
+
+GET {{EkoaGym.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

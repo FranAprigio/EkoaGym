@@ -1,0 +1,20 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=EkoaGym;User Id=sa;Password=CHANGE_ME;TrustServerCertificate=True;"
+  },
+  "Jwt": {
+    "SigningKey": "CHANGE_ME_LOCAL_DEV_SIGNING_KEY",
+    "Issuer": "EkoaGym",
+    "Audience": "EkoaGym",
+    "ExpiryMinutes": 60
+  },
+  "Cors": {
+    "AllowedOrigins": []
+  }
+}

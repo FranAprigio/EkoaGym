@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EkoaGym.Api/EkoaGym.Api.csproj" />
+    <Project Path="src/EkoaGym.Application/EkoaGym.Application.csproj" />
+    <Project Path="src/EkoaGym.Domain/EkoaGym.Domain.csproj" />
+    <Project Path="src/EkoaGym.Infrastructure/EkoaGym.Infrastructure.csproj" />
+  </Folder>
+</Solution>
