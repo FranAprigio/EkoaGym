@@ -6,6 +6,7 @@
     </div>
 
     <div class="flex gap-2">
+        <button type="button" class="btn-accent flex-1" @onclick="() => OnStart.InvokeAsync(Plan.Id)">Start</button>
         <button type="button" class="btn-outline flex-1" @onclick="() => OnEdit.InvokeAsync(Plan.Id)">Edit</button>
         <button type="button" class="btn-outline flex-1" @onclick="() => OnDuplicate.InvokeAsync(Plan.Id)">Duplicate</button>
         <button type="button" class="btn-danger flex-1" @onclick="() => OnDelete.InvokeAsync(Plan.Id)">Delete</button>
@@ -14,6 +15,7 @@
 
 @code {
     [Parameter, EditorRequired] public PlanSummary Plan { get; set; } = null!;
+    [Parameter] public EventCallback<Guid> OnStart { get; set; }
     [Parameter] public EventCallback<Guid> OnEdit { get; set; }
     [Parameter] public EventCallback<Guid> OnDuplicate { get; set; }
     [Parameter] public EventCallback<Guid> OnDelete { get; set; }

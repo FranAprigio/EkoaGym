@@ -2,7 +2,9 @@
 using EkoaGym.Mobile.Services.Auth;
 using EkoaGym.Mobile.Services.Connectivity;
 using EkoaGym.Mobile.Services.Data;
+using EkoaGym.Mobile.Services.Notifications;
 using Microsoft.Extensions.Logging;
+using Plugin.LocalNotification;
 
 namespace EkoaGym.Mobile;
 
@@ -13,6 +15,7 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
+			.UseLocalNotification()
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -29,6 +32,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<IConnectivityService, ConnectivityService>();
 		builder.Services.AddSingleton<LocalDatabaseService>();
 		builder.Services.AddSingleton<ISyncService, SyncService>();
+		builder.Services.AddSingleton<IRestTimerNotifier, RestTimerNotifier>();
 
 		// Typed API client — carries the bearer token and retries once on 401 via AuthDelegatingHandler.
 		builder.Services

@@ -1,6 +1,9 @@
 @page "/my-workout"
+@using EkoaGym.Mobile.Services.Data.Entities
+@using System.Text.Json
 @inject ISyncService SyncService
 @inject ApiClient Api
+@inject LocalDatabaseService Db
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -8,6 +11,14 @@
     <h1 class="text-xl font-semibold">My Workout</h1>
     <button type="button" class="btn-primary" @onclick='() => Navigation.NavigateTo("/plans/new")'>+ New Plan</button>
 </div>
+
+@if (activeSessionPlanId is Guid activeId)
+{
+    <button type="button" class="card mb-4 flex w-full items-center justify-between border-info" @onclick="() => ResumeWorkout(activeId)">
+        <span>Resume "@activeSessionPlanName" workout</span>
+        <span class="text-info">Resume</span>
+    </button>
+}
 
 @if (isLoading)
 {
@@ -26,7 +37,7 @@ else
         <div class="flex flex-col gap-3">
             @foreach (var plan in plans)
             {
-                <PlanCard Plan="plan" OnEdit="EditPlanAsync" OnDuplicate="DuplicatePlanAsync" OnDelete="DeletePlanAsync" />
+                <PlanCard Plan="plan" OnStart="ResumeWorkout" OnEdit="EditPlanAsync" OnDuplicate="DuplicatePlanAsync" OnDelete="DeletePlanAsync" />
             }
         </div>
     }
@@ -36,6 +47,8 @@ else
     private bool isLoading = true;
     private string? errorMessage;
     private List<PlanSummary> plans = [];
+    private Guid? activeSessionPlanId;
+    private string? activeSessionPlanName;
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -46,6 +59,11 @@ else
         try
         {
             plans = (await SyncService.GetPlansAsync()).ToList();
+
+            var activeRow = await Db.GetActiveSessionAsync();
+            var activeState = activeRow is null ? null : JsonSerializer.Deserialize<ActiveWorkoutState>(activeRow.PayloadJson);
+            activeSessionPlanId = activeState?.PlanId;
+            activeSessionPlanName = activeState?.PlanName;
         }
         catch (ApiException ex)
         {
@@ -56,6 +74,8 @@ else
             isLoading = false;
         }
     }
+
+    private void ResumeWorkout(Guid planId) => Navigation.NavigateTo($"/active-workout/{planId}");
 
     private Task EditPlanAsync(Guid id)
     {

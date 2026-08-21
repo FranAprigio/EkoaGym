@@ -29,6 +29,7 @@ public class LocalDatabaseService
                 await conn.CreateTableAsync<CachedExercise>();
                 await conn.CreateTableAsync<CachedSession>();
                 await conn.CreateTableAsync<OfflineWriteQueueItem>();
+                await conn.CreateTableAsync<CachedActiveSession>();
                 connection = conn;
             }
         }
@@ -105,6 +106,28 @@ public class LocalDatabaseService
     {
         var conn = await GetConnectionAsync();
         return await conn.Table<OfflineWriteQueueItem>().OrderBy(i => i.CreatedAt).ToListAsync();
+    }
+
+    public async Task<CachedActiveSession?> GetActiveSessionAsync()
+    {
+        var conn = await GetConnectionAsync();
+        return await conn.Table<CachedActiveSession>().FirstOrDefaultAsync();
+    }
+
+    public async Task SaveActiveSessionAsync(CachedActiveSession state)
+    {
+        var conn = await GetConnectionAsync();
+        await conn.RunInTransactionAsync(tran =>
+        {
+            tran.DeleteAll<CachedActiveSession>();
+            tran.Insert(state);
+        });
+    }
+
+    public async Task ClearActiveSessionAsync()
+    {
+        var conn = await GetConnectionAsync();
+        await conn.DeleteAllAsync<CachedActiveSession>();
     }
 
     public async Task EnqueueWriteAsync(OfflineWriteQueueItem item)

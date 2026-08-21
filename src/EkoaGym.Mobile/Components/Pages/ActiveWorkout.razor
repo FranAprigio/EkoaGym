@@ -1,0 +1,394 @@
+@page "/active-workout/{PlanId:guid}"
+@using EkoaGym.Mobile.Services.Data.Entities
+@using System.Net.Http
+@using System.Text.Json
+@inject ApiClient Api
+@inject ISyncService SyncService
+@inject LocalDatabaseService Db
+@inject IRestTimerNotifier RestNotifier
+@inject NavigationManager Navigation
+@implements IDisposable
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else if (isCompleted)
+{
+    <div class="card flex flex-col items-center gap-3 text-center">
+        <span class="text-3xl">✅</span>
+        <p class="text-lg font-semibold">Workout complete!</p>
+        @if (completionResult is not null)
+        {
+            <p class="text-sm text-text-secondary">Duration: @FormatDuration(completionResult.StartedAt, completionResult.EndedAt)</p>
+        }
+        @if (!string.IsNullOrEmpty(pendingSyncMessage))
+        {
+            <p class="text-xs text-text-secondary">@pendingSyncMessage</p>
+        }
+        <button type="button" class="btn-primary w-full" @onclick='() => Navigation.NavigateTo("/my-workout")'>Back to My Workout</button>
+    </div>
+}
+else if (state is null)
+{
+    <ErrorBanner Message="@errorMessage" />
+    @if (otherActivePlanId is Guid otherId)
+    {
+        <button type="button" class="btn-outline mt-3 w-full" @onclick="() => ResumeOtherWorkout(otherId)">Resume that workout instead</button>
+    }
+}
+else
+{
+    <h1 class="mb-1 text-xl font-semibold">@state.PlanName</h1>
+    <p class="mb-4 text-sm text-text-secondary">Exercise @(state.CurrentExerciseIndex + 1) of @state.Exercises.Count</p>
+
+    @if (CurrentExercise is not null)
+    {
+        <div class="card mb-4 flex flex-col gap-3">
+            <p class="text-lg font-medium">@CurrentExercise.ExerciseName</p>
+            <p class="text-sm text-info">Target: @CurrentExercise.Sets sets × @CurrentExercise.Reps reps at @CurrentExercise.WeightKg kg</p>
+
+            @if (restSecondsRemaining > 0)
+            {
+                <div class="rounded-lg border border-info bg-info/10 px-4 py-3 text-center">
+                    <p class="text-sm text-info">Resting...</p>
+                    <p class="text-2xl font-semibold text-info">@restSecondsRemaining s</p>
+                </div>
+            }
+
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="label">Actual reps</label>
+                    <InputNumber class="input" @bind-Value="actualReps" />
+                </div>
+                <div>
+                    <label class="label">Actual weight (kg)</label>
+                    <InputNumber class="input" @bind-Value="actualWeightKg" />
+                </div>
+            </div>
+
+            <button type="button" class="btn-primary" @onclick="LogSetAsync">Log Set</button>
+
+            @if (CurrentExercise.LoggedSets.Count > 0)
+            {
+                <div class="flex flex-col gap-1">
+                    @foreach (var set in CurrentExercise.LoggedSets)
+                    {
+                        <p class="text-sm text-text-secondary">
+                            Set @set.SetNumber: @set.ActualReps reps at @set.ActualWeightKg kg
+                            @(set.Synced ? "" : "(pending sync)")
+                        </p>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="mb-4 flex gap-3">
+            <button type="button" class="btn-outline flex-1" disabled="@(state.CurrentExerciseIndex == 0)" @onclick="PreviousExercise">Previous</button>
+            <button type="button" class="btn-outline flex-1" disabled="@(state.CurrentExerciseIndex == state.Exercises.Count - 1)" @onclick="NextExercise">Next</button>
+        </div>
+    }
+
+    <ErrorBanner Message="@errorMessage" />
+
+    @if (isSaving)
+    {
+        <LoadingIndicator Message="Finishing..." />
+    }
+    else
+    {
+        <div class="flex gap-3">
+            <button type="button" class="btn-outline flex-1" @onclick='() => Navigation.NavigateTo("/my-workout")'>Pause</button>
+            <button type="button" class="btn-primary flex-1" @onclick="FinishAsync">Finish Workout</button>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public Guid PlanId { get; set; }
+
+    private Guid? loadedForPlanId;
+    private ActiveWorkoutState? state;
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool isCompleted;
+    private string? errorMessage;
+    private string? pendingSyncMessage;
+    private Guid? otherActivePlanId;
+    private CompleteSessionResult? completionResult;
+
+    private int actualReps;
+    private decimal actualWeightKg;
+    private int restSecondsRemaining;
+    private CancellationTokenSource? restCts;
+
+    private ActiveWorkoutExercise? CurrentExercise => state?.Exercises.ElementAtOrDefault(state.CurrentExerciseIndex);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (loadedForPlanId == PlanId)
+        {
+            return;
+        }
+
+        loadedForPlanId = PlanId;
+        await InitializeAsync();
+    }
+
+    private async Task InitializeAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        otherActivePlanId = null;
+        restCts?.Cancel();
+
+        try
+        {
+            var existingRow = await Db.GetActiveSessionAsync();
+            var existingState = existingRow is null ? null : JsonSerializer.Deserialize<ActiveWorkoutState>(existingRow.PayloadJson);
+
+            if (existingState is not null && existingState.PlanId == PlanId)
+            {
+                state = existingState;
+            }
+            else if (existingState is not null)
+            {
+                errorMessage = $"You have another workout in progress (\"{existingState.PlanName}\"). Finish or discard it before starting a new one.";
+                otherActivePlanId = existingState.PlanId;
+                state = null;
+                return;
+            }
+            else
+            {
+                state = await StartNewSessionAsync();
+            }
+
+            if (state is not null)
+            {
+                PrefillInputsForCurrentExercise();
+                ResumeRestTimerIfNeeded();
+            }
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task<ActiveWorkoutState?> StartNewSessionAsync()
+    {
+        // Starting a workout requires connectivity — there's no server-side session yet to log sets against.
+        var response = await Api.PostAsync<StartSessionResult>("api/sessions", new { PlanId });
+        if (response is null)
+        {
+            return null;
+        }
+
+        var plans = await SyncService.GetPlansAsync();
+        var planName = plans.FirstOrDefault(p => p.Id == response.PlanId)?.Name ?? "Workout";
+
+        var newState = new ActiveWorkoutState
+        {
+            SessionId = response.SessionId,
+            PlanId = response.PlanId,
+            PlanName = planName,
+            StartedAt = response.StartedAt,
+            Exercises = response.Exercises.Select(e => new ActiveWorkoutExercise
+            {
+                ExerciseId = e.ExerciseId,
+                ExerciseName = e.ExerciseName,
+                Sets = e.Sets,
+                Reps = e.Reps,
+                WeightKg = e.WeightKg,
+                RestSeconds = e.RestSeconds,
+            }).ToList(),
+        };
+
+        await SaveStateAsync(newState);
+        return newState;
+    }
+
+    private void PrefillInputsForCurrentExercise()
+    {
+        if (CurrentExercise is null)
+        {
+            return;
+        }
+
+        actualReps = CurrentExercise.Reps;
+        actualWeightKg = CurrentExercise.WeightKg;
+    }
+
+    private async Task LogSetAsync()
+    {
+        if (state is null || CurrentExercise is null)
+        {
+            return;
+        }
+
+        var exercise = CurrentExercise;
+        var setNumber = exercise.LoggedSets.Count + 1;
+        var loggedSet = new LoggedSet
+        {
+            SetNumber = setNumber,
+            ActualReps = actualReps,
+            ActualWeightKg = actualWeightKg,
+            CompletedAt = DateTime.UtcNow,
+            Synced = false,
+        };
+
+        // Optimistic local update first — the UI must reflect the logged set regardless of connectivity.
+        exercise.LoggedSets.Add(loggedSet);
+
+        var request = new LogSetRequest(exercise.ExerciseId, setNumber, actualReps, actualWeightKg);
+        try
+        {
+            await Api.PostAsync($"api/sessions/{state.SessionId}/sets", request);
+            loggedSet.Synced = true;
+        }
+        catch (ApiException)
+        {
+            await SyncService.QueueWriteAsync(HttpMethod.Post, $"api/sessions/{state.SessionId}/sets", request);
+        }
+
+        await SaveStateAsync(state);
+        StartRestTimer(exercise.RestSeconds);
+    }
+
+    private void StartRestTimer(int restSeconds)
+    {
+        if (state is null || restSeconds <= 0)
+        {
+            return;
+        }
+
+        state.RestEndsAtUtc = DateTime.UtcNow.AddSeconds(restSeconds);
+        _ = SaveStateAsync(state);
+        BeginRestCountdown();
+    }
+
+    private void ResumeRestTimerIfNeeded()
+    {
+        if (state?.RestEndsAtUtc is DateTime endsAt && endsAt > DateTime.UtcNow)
+        {
+            BeginRestCountdown();
+        }
+    }
+
+    private void BeginRestCountdown()
+    {
+        restCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        restCts = cts;
+        _ = RunRestCountdownAsync(cts.Token);
+    }
+
+    private async Task RunRestCountdownAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested && state?.RestEndsAtUtc is DateTime endsAt)
+            {
+                var remaining = endsAt - DateTime.UtcNow;
+                if (remaining <= TimeSpan.Zero)
+                {
+                    break;
+                }
+
+                restSecondsRemaining = (int)Math.Ceiling(remaining.TotalSeconds);
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(TimeSpan.FromSeconds(1), ct);
+            }
+
+            if (!ct.IsCancellationRequested && state is not null)
+            {
+                restSecondsRemaining = 0;
+                await RestNotifier.NotifyRestOverAsync(CurrentExercise?.ExerciseName ?? "your next set");
+                state.RestEndsAtUtc = null;
+                await SaveStateAsync(state);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Superseded by a newer rest period or the page was navigated away from.
+        }
+    }
+
+    private void PreviousExercise()
+    {
+        if (state is null || state.CurrentExerciseIndex <= 0)
+        {
+            return;
+        }
+
+        state.CurrentExerciseIndex--;
+        PrefillInputsForCurrentExercise();
+        _ = SaveStateAsync(state);
+    }
+
+    private void NextExercise()
+    {
+        if (state is null || state.CurrentExerciseIndex >= state.Exercises.Count - 1)
+        {
+            return;
+        }
+
+        state.CurrentExerciseIndex++;
+        PrefillInputsForCurrentExercise();
+        _ = SaveStateAsync(state);
+    }
+
+    private async Task FinishAsync()
+    {
+        if (state is null)
+        {
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+        try
+        {
+            try
+            {
+                completionResult = await Api.PutAsync<CompleteSessionResult>($"api/sessions/{state.SessionId}/complete");
+                pendingSyncMessage = null;
+            }
+            catch (ApiException)
+            {
+                await SyncService.QueueWriteAsync(HttpMethod.Put, $"api/sessions/{state.SessionId}/complete", null);
+                completionResult = new CompleteSessionResult(state.SessionId, state.StartedAt, DateTime.UtcNow);
+                pendingSyncMessage = "You're offline — this will finish syncing once you're back online.";
+            }
+
+            restCts?.Cancel();
+            await Db.ClearActiveSessionAsync();
+            isCompleted = true;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private Task SaveStateAsync(ActiveWorkoutState toSave) =>
+        Db.SaveActiveSessionAsync(new CachedActiveSession { PayloadJson = JsonSerializer.Serialize(toSave) });
+
+    private void ResumeOtherWorkout(Guid otherPlanId) => Navigation.NavigateTo($"/active-workout/{otherPlanId}");
+
+    private static string FormatDuration(DateTime startedAt, DateTime endedAt)
+    {
+        var duration = endedAt - startedAt;
+        return duration.TotalHours >= 1 ? $"{duration:h\\hmm\\m}" : $"{duration:mm\\mss\\s}";
+    }
+
+    public void Dispose()
+    {
+        restCts?.Cancel();
+    }
+}
