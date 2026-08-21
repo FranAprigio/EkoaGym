@@ -2,8 +2,12 @@ using System.Text;
 using EkoaGym.Api.ExceptionHandling;
 using EkoaGym.Application.Auth;
 using EkoaGym.Application.Common.Configuration;
+using EkoaGym.Application.Goals;
+using EkoaGym.Application.Profiles;
 using EkoaGym.Domain.Entities;
+using EkoaGym.Infrastructure.Goals;
 using EkoaGym.Infrastructure.Persistence;
+using EkoaGym.Infrastructure.Profiles;
 using EkoaGym.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -31,11 +35,15 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptio
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IGoalService, GoalService>();
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Read the raw "sub" claim instead of the legacy ClaimTypes.NameIdentifier remapping.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

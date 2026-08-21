@@ -13,6 +13,8 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
             EmailAlreadyInUseException => (StatusCodes.Status409Conflict, new ApiErrorResponse("email_already_in_use", exception.Message)),
             InvalidCredentialsException => (StatusCodes.Status401Unauthorized, new ApiErrorResponse("invalid_credentials", exception.Message)),
             InvalidRefreshTokenException => (StatusCodes.Status401Unauthorized, new ApiErrorResponse("invalid_refresh_token", exception.Message)),
+            ProfileNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("profile_not_found", exception.Message)),
+            GoalNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("goal_not_found", exception.Message)),
             _ => (StatusCodes.Status500InternalServerError, new ApiErrorResponse("internal_error", "An unexpected error occurred."))
         };
 
