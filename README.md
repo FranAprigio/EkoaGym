@@ -8,6 +8,9 @@ ASP.NET Core Web API backend for EkoaGym, organized as a clean architecture solu
 | `src/EkoaGym.Application` | Services, DTOs, configuration options, interfaces |
 | `src/EkoaGym.Infrastructure` | EF Core `DbContext`, migrations, data access |
 | `src/EkoaGym.Api` | Controllers, middleware, composition root (`Program.cs`) |
+| `tests/EkoaGym.Application.Tests` | Unit tests: validation attributes, `PagedResult` |
+| `tests/EkoaGym.Infrastructure.Tests` | Unit tests for services (`AuthService`, `WorkoutPlanService`, `ProgressionService`, `ExerciseProgressService`) against EF Core's InMemory provider |
+| `tests/EkoaGym.Api.Tests` | Integration tests via `WebApplicationFactory<Program>`, hitting real endpoints end-to-end |
 
 ## Prerequisites
 
@@ -120,4 +123,32 @@ CORS allowed origins for the mobile app are configured under `Cors:AllowedOrigin
 - `GET /api/exercises/{exerciseId}/progress` — time-ordered series (one point per session that logged the exercise), each with `bestSetReps`/`bestSetWeightKg` (the set with the highest weight×reps that session), `totalVolumeKg`, `totalSets`, `totalReps`, and `isWeightPR`/`isRepPR` flags computed chronologically against all prior sessions (no PR table — computed at query time). Supports `?from=`/`?to=` (matched against session start). 404 if the exercise doesn't exist; empty array (not an error) if the user never logged it.
   - This lives in its own `ExerciseProgressController` (`[Authorize]`), not inside `ExercisesController` — that controller is `[AllowAnonymous]`, and ASP.NET Core's `[AllowAnonymous]` on a controller cannot be overridden by `[Authorize]` on one of its actions (it short-circuits auth checks for the whole endpoint regardless).
 
+## Testing
+
+Run the whole suite from the repo root:
+
+```powershell
+dotnet test
+```
+
+Or a single project (faster while iterating):
+
+```powershell
+dotnet test tests/EkoaGym.Application.Tests
+dotnet test tests/EkoaGym.Infrastructure.Tests
+dotnet test tests/EkoaGym.Api.Tests
+```
+
+- **`EkoaGym.Application.Tests`** — pure unit tests for validation attributes (`PasswordComplexityAttribute`, `NotInFutureAttribute`, `NotInPastAttribute`) and `PagedResult`, plus a reflection-based regression test that fails the build if any record request DTO has a validation attribute targeting the generated property instead of the primary constructor parameter (see the "record validation attributes" gotcha below).
+- **`EkoaGym.Infrastructure.Tests`** — exercises the real service classes (`AuthService`, `WorkoutPlanService`, `ProgressionService`, `ExerciseProgressService`) against EF Core's InMemory provider (via `TestDbContextFactory`, one fresh isolated database per test).
+- **`EkoaGym.Api.Tests`** — full HTTP integration tests via `WebApplicationFactory<Program>` (`ApiTestFactory`), which swaps the real SQL Server `DbContext` for an isolated InMemory one and supplies deterministic JWT/Progression config, so tests never depend on a developer's local `.env`/`appsettings.Development.json`. Includes regression tests for three real bugs found during manual testing (see below).
+
+None of this requires Docker or the local dev SQL Server container to be running — all three test projects are fully self-contained.
+
+### Bugs found only via runtime testing (not caught by `dotnet build`)
+
+- **Record validation attributes**: `[property: Required]` etc. on a record's primary-constructor parameter throws `InvalidOperationException` at request time in ASP.NET Core (it validates via the constructor parameter, not the property). Fixed by using bare attributes (e.g. `[Required] string Email`) with no `property:` target. Guarded going forward by `RecordValidationAttributeTargetTests`.
+- **Enum JSON (de)serialization**: enums default to raw ints in JSON; fixed globally via `JsonStringEnumConverter` registered on `AddControllers().AddJsonOptions(...)`. Regression-covered by `ProfileEndpointsTests`.
+- **`DateTime` losing UTC `Kind` on reload from SQL Server**: fixed via a `ConfigureConventions` value converter in `EkoaGymDbContext` forcing `DateTimeKind.Utc` on read (no migration needed — it's a CLR-side behavior change only). Regression-covered by `SessionsRegressionTests`.
+- **JWT bearer options read config too eagerly**: `Program.cs` originally captured `JwtOptions` into a plain local variable via `builder.Configuration.GetSection(...).Get<JwtOptions>()` *before* `builder.Build()`. This works in production (config is fully loaded synchronously by then) but breaks under `WebApplicationFactory`, whose test-only config overrides only apply during `Build()` — the JWT signing key ended up empty in tests. Fixed by resolving `JwtOptions` lazily via `services.AddOptions<JwtBearerOptions>(...).Configure<IOptions<JwtOptions>>(...)` instead of a pre-`Build()` snapshot.
 

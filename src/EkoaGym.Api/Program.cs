@@ -24,6 +24,7 @@ using EkoaGym.Infrastructure.Sessions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -81,23 +82,32 @@ builder.Services.AddScoped<IBodyMetricService, BodyMetricService>();
 builder.Services.AddScoped<IProgressPhotoService, ProgressPhotoService>();
 builder.Services.AddScoped<IExerciseProgressService, ExerciseProgressService>();
 
-var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         // Read the raw "sub" claim instead of the legacy ClaimTypes.NameIdentifier remapping.
         options.MapInboundClaims = false;
-        options.TokenValidationParameters = new TokenValidationParameters
+    });
+
+// Configured via IOptions (resolved lazily at first use), NOT a value captured before Build() — a
+// pre-Build() snapshot of configuration misses overrides applied by things like WebApplicationFactory
+// in integration tests, which only take effect during Build().
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IOptions<JwtOptions>>((bearerOptions, jwtOptions) =>
+    {
+        var jwt = jwtOptions.Value;
+        bearerOptions.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = jwtOptions.Issuer,
+            ValidIssuer = jwt.Issuer,
             ValidateAudience = true,
-            ValidAudience = jwtOptions.Audience,
+            ValidAudience = jwt.Audience,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey))
         };
     });
+
 builder.Services.AddAuthorization();
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -141,3 +151,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Exposed so WebApplicationFactory<Program> can be used from integration tests.
+public partial class Program;
