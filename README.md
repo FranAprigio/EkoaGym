@@ -81,3 +81,11 @@ Secrets (connection strings, JWT signing key/issuer/audience) are never hardcode
 - Docker: `.env` (gitignored; copy from the committed `.env.example`), mapped to config via double-underscore env vars (e.g. `ConnectionStrings__DefaultConnection`, `Jwt__SigningKey`)
 
 CORS allowed origins for the mobile app are configured under `Cors:AllowedOrigins` in appsettings. If left empty in Development, the API allows any origin as a local convenience fallback.
+
+## Authentication
+
+- `POST /api/auth/register` — `{ email, password, name }` → 200 with `{ accessToken, refreshToken, accessTokenExpiresAt }`, 409 if the email is already registered.
+- `POST /api/auth/login` — `{ email, password }` → 200 with tokens, 401 on invalid credentials.
+- `POST /api/auth/refresh` — `{ refreshToken }` → 200 with a new token pair (refresh tokens are rotated/single-use), 401 if invalid/expired/revoked.
+- All other controllers must add `[Authorize]` explicitly (see `AuthController` for the `[AllowAnonymous]` exception); requests without a valid JWT bearer token get 401.
+

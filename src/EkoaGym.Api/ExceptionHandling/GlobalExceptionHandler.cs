@@ -1,20 +1,31 @@
+using EkoaGym.Application.Common.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 
 namespace EkoaGym.Api.ExceptionHandling;
 
-// Catch-all handler; specific domain exceptions can be mapped to dedicated codes/status here later.
+// Catch-all handler; maps known Application exceptions to their appropriate status code/error code.
 public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        logger.LogError(exception, "Unhandled exception processing {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
+        var (statusCode, response) = exception switch
+        {
+            EmailAlreadyInUseException => (StatusCodes.Status409Conflict, new ApiErrorResponse("email_already_in_use", exception.Message)),
+            InvalidCredentialsException => (StatusCodes.Status401Unauthorized, new ApiErrorResponse("invalid_credentials", exception.Message)),
+            InvalidRefreshTokenException => (StatusCodes.Status401Unauthorized, new ApiErrorResponse("invalid_refresh_token", exception.Message)),
+            _ => (StatusCodes.Status500InternalServerError, new ApiErrorResponse("internal_error", "An unexpected error occurred."))
+        };
 
-        httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        if (statusCode == StatusCodes.Status500InternalServerError)
+        {
+            logger.LogError(exception, "Unhandled exception processing {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
+        }
+
+        httpContext.Response.StatusCode = statusCode;
         httpContext.Response.ContentType = "application/json";
-
-        var response = new ApiErrorResponse("internal_error", "An unexpected error occurred.");
         await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
 
         return true;
     }
 }
+

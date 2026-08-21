@@ -12,7 +12,8 @@
     "SigningKey": "CHANGE_ME_LOCAL_DEV_SIGNING_KEY",
     "Issuer": "EkoaGym",
     "Audience": "EkoaGym",
-    "ExpiryMinutes": 60
+    "AccessTokenExpiryMinutes": 60,
+    "RefreshTokenExpiryDays": 30
   },
   "Cors": {
     "AllowedOrigins": []
