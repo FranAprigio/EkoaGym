@@ -1,0 +1,129 @@
+@page "/workout-history"
+@inject ApiClient Api
+@inject NavigationManager Navigation
+
+<h1 class="mb-4 text-xl font-semibold">Workout History</h1>
+
+<div class="mb-4 flex gap-2">
+    <div class="flex-1">
+        <label class="label">From</label>
+        <input type="date" class="input" @bind="fromDate" @bind:event="oninput" />
+    </div>
+    <div class="flex-1">
+        <label class="label">To</label>
+        <input type="date" class="input" @bind="toDate" @bind:event="oninput" />
+    </div>
+    <div class="flex items-end">
+        <button type="button" class="btn-primary" @onclick="() => LoadAsync(resetPage: true)">Apply</button>
+    </div>
+</div>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <ErrorBanner Message="@errorMessage" OnRetry="() => LoadAsync(resetPage: true)" />
+
+    @if (sessions.Count == 0 && errorMessage is null)
+    {
+        <EmptyState Icon="🗒️" Title="No workout history yet" Description="Complete a workout to see it here." />
+    }
+    else
+    {
+        <div class="flex flex-col gap-2">
+            @foreach (var session in sessions)
+            {
+                <button type="button" class="card flex w-full items-center justify-between text-left" @onclick="() => OpenDetail(session.Id)">
+                    <div>
+                        <p class="font-medium">@session.PlanName</p>
+                        <p class="text-sm text-text-secondary">@session.StartedAt.ToString("d") · @session.ExerciseCount exercise(s)</p>
+                    </div>
+                    <span class="text-sm text-text-secondary">@session.TotalVolumeKg kg</span>
+                </button>
+            }
+        </div>
+
+        @if (hasMore)
+        {
+            @if (isLoadingMore)
+            {
+                <LoadingIndicator Message="Loading more..." />
+            }
+            else
+            {
+                <button type="button" class="btn-outline mt-3 w-full" @onclick="LoadMoreAsync">Load more</button>
+            }
+        }
+    }
+}
+
+@code {
+    private const int PageSize = 20;
+
+    private readonly List<SessionSummary> sessions = [];
+    private DateOnly? fromDate;
+    private DateOnly? toDate;
+    private int page = 1;
+    private int totalCount;
+    private bool isLoading = true;
+    private bool isLoadingMore;
+    private string? errorMessage;
+
+    private bool hasMore => sessions.Count < totalCount;
+
+    protected override Task OnInitializedAsync() => LoadAsync(resetPage: true);
+
+    private async Task LoadAsync(bool resetPage)
+    {
+        if (resetPage)
+        {
+            page = 1;
+            sessions.Clear();
+        }
+
+        isLoading = sessions.Count == 0;
+        isLoadingMore = !isLoading;
+        errorMessage = null;
+        try
+        {
+            var queryParams = new List<string> { $"page={page}", $"pageSize={PageSize}" };
+            if (fromDate is DateOnly from)
+            {
+                queryParams.Add($"from={from:yyyy-MM-dd}");
+            }
+
+            if (toDate is DateOnly to)
+            {
+                queryParams.Add($"to={to:yyyy-MM-dd}");
+            }
+
+            var result = await Api.GetAsync<PagedResult<SessionSummary>>($"api/sessions?{string.Join('&', queryParams)}");
+            if (resetPage)
+            {
+                sessions.Clear();
+            }
+
+            sessions.AddRange(result?.Items ?? []);
+            totalCount = result?.TotalCount ?? 0;
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+            isLoadingMore = false;
+        }
+    }
+
+    private Task LoadMoreAsync()
+    {
+        page++;
+        return LoadAsync(resetPage: false);
+    }
+
+    private void OpenDetail(Guid id) => Navigation.NavigateTo($"/workout-history/{id}");
+}

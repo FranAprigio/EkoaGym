@@ -1,0 +1,86 @@
+@page "/workout-history/{Id:guid}"
+@inject ApiClient Api
+
+<h1 class="mb-4 text-xl font-semibold">Workout Detail</h1>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <ErrorBanner Message="@errorMessage" OnRetry="LoadAsync" />
+
+    @if (session is not null)
+    {
+        <div class="card mb-4 flex flex-col gap-1">
+            <p class="font-medium">@session.PlanName</p>
+            <p class="text-sm text-text-secondary">@session.StartedAt.ToString("g")</p>
+            @if (session.EndedAt is DateTime endedAt)
+            {
+                <p class="text-sm text-text-secondary">Duration: @FormatDuration(session.StartedAt, endedAt)</p>
+            }
+        </div>
+
+        @if (exerciseGroups.Count == 0)
+        {
+            <EmptyState Icon="🗒️" Title="No sets logged for this session" />
+        }
+        else
+        {
+            <div class="flex flex-col gap-3">
+                @foreach (var group in exerciseGroups)
+                {
+                    <div class="card flex flex-col gap-2">
+                        <p class="font-medium">@group.ExerciseName</p>
+                        @foreach (var set in group.Sets)
+                        {
+                            <p class="text-sm text-text-secondary">Set @set.SetNumber: @set.ActualReps reps at @set.ActualWeightKg kg</p>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private bool isLoading = true;
+    private string? errorMessage;
+    private SessionDetail? session;
+    private List<ExerciseGroup> exerciseGroups = [];
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            session = await Api.GetAsync<SessionDetail>($"api/sessions/{Id}");
+            exerciseGroups = session?.Sets
+                .GroupBy(s => new { s.ExerciseId, s.ExerciseName })
+                .Select(g => new ExerciseGroup(g.Key.ExerciseName, g.OrderBy(s => s.SetNumber).ToList()))
+                .ToList() ?? [];
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static string FormatDuration(DateTime startedAt, DateTime endedAt)
+    {
+        var duration = endedAt - startedAt;
+        return duration.TotalHours >= 1 ? $"{duration:h\\hmm\\m}" : $"{duration:mm\\mss\\s}";
+    }
+
+    private record ExerciseGroup(string ExerciseName, List<SessionSetLog> Sets);
+}

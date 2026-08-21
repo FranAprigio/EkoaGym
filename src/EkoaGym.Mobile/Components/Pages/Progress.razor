@@ -1,5 +1,6 @@
 @page "/progress"
 @inject ISyncService SyncService
+@inject NavigationManager Navigation
 
 <h1 class="mb-4 text-xl font-semibold">Progress</h1>
 
@@ -13,13 +14,16 @@ else if (lastSession is null)
 }
 else
 {
-    <div class="card">
+    <div class="card mb-4">
         <p class="font-medium">Last completed session</p>
         <p class="text-sm text-text-secondary">@lastSession.PlanName</p>
         <p class="text-sm">Total volume: @lastSession.TotalVolumeKg kg</p>
         <p class="text-sm">Exercises: @lastSession.ExerciseCount</p>
     </div>
 }
+
+<button type="button" class="btn-outline w-full" @onclick='() => Navigation.NavigateTo("/workout-history")'>View full workout history</button>
+
 
 @code {
     private bool isLoading = true;
