@@ -42,6 +42,34 @@ else if (exercise is not null)
         }
     </div>
 
+    @if (progressPoints.Count > 0)
+    {
+        <div class="card mb-4 flex flex-col gap-3">
+            <p class="font-medium">Strength progress</p>
+
+            <div>
+                <p class="mb-1 text-sm text-text-secondary">Best set weight (kg)</p>
+                <LineChart Values="progressPoints.Select(p => p.BestSetWeightKg).ToList()" ColorClass="text-primary" />
+            </div>
+
+            <div>
+                <p class="mb-1 text-sm text-text-secondary">Volume (kg)</p>
+                <LineChart Values="progressPoints.Select(p => p.TotalVolumeKg).ToList()" ColorClass="text-info" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                @foreach (var point in progressPoints.OrderByDescending(p => p.SessionDate))
+                {
+                    <p class="text-sm @(point.IsWeightPR || point.IsRepPR ? "font-semibold text-accent" : "text-text-secondary")">
+                        @point.SessionDate.ToString("d"): @point.BestSetWeightKg kg × @point.BestSetReps reps
+                        @(point.IsWeightPR ? " 🏆 weight PR" : "")
+                        @(point.IsRepPR ? " 🏆 rep PR" : "")
+                    </p>
+                }
+            </div>
+        </div>
+    }
+
     @if (isChoosingPlan)
     {
         <div class="card flex flex-col gap-3">
@@ -97,6 +125,7 @@ else if (exercise is not null)
     private string? addedMessage;
     private string newPlanName = string.Empty;
     private IReadOnlyList<PlanSummary> plans = [];
+    private List<ExerciseProgressPoint> progressPoints = [];
 
     protected override Task OnInitializedAsync() => LoadAsync();
 
@@ -108,6 +137,7 @@ else if (exercise is not null)
         try
         {
             exercise = await Api.GetAsync<ExerciseDetailResponse>($"api/exercises/{Id}");
+            await LoadProgressAsync();
         }
         catch (ApiException)
         {
@@ -126,6 +156,20 @@ else if (exercise is not null)
         finally
         {
             isLoading = false;
+        }
+    }
+
+    private async Task LoadProgressAsync()
+    {
+        try
+        {
+            progressPoints = (await Api.GetAsync<List<ExerciseProgressPoint>>($"api/exercises/{Id}/progress"))?
+                .OrderBy(p => p.SessionDate).ToList() ?? [];
+        }
+        catch (ApiException)
+        {
+            // No progress history yet (or offline) — the chart section simply doesn't render.
+            progressPoints = [];
         }
     }
 

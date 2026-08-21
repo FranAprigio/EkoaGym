@@ -1,5 +1,6 @@
 @page "/progress"
 @inject ISyncService SyncService
+@inject ApiClient Api
 @inject NavigationManager Navigation
 
 <h1 class="mb-4 text-xl font-semibold">Progress</h1>
@@ -22,16 +23,181 @@ else
     </div>
 }
 
-<button type="button" class="btn-outline w-full" @onclick='() => Navigation.NavigateTo("/workout-history")'>View full workout history</button>
+<div class="mb-4 flex gap-2">
+    <button type="button" class="btn-outline flex-1" @onclick='() => Navigation.NavigateTo("/workout-history")'>Workout history</button>
+    <button type="button" class="btn-outline flex-1" @onclick='() => Navigation.NavigateTo("/progress-photos")'>Progress photos</button>
+</div>
 
+<h2 class="mb-2 font-medium">Body metrics</h2>
+
+<div class="mb-3 flex gap-2">
+    <div class="flex-1">
+        <label class="label">From</label>
+        <input type="date" class="input" @bind="metricsFrom" @bind:event="oninput" />
+    </div>
+    <div class="flex-1">
+        <label class="label">To</label>
+        <input type="date" class="input" @bind="metricsTo" @bind:event="oninput" />
+    </div>
+    <div class="flex items-end">
+        <button type="button" class="btn-primary" @onclick="LoadMetricsAsync">Apply</button>
+    </div>
+</div>
+
+@if (isLoadingMetrics)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <ErrorBanner Message="@metricsError" OnRetry="LoadMetricsAsync" />
+
+    @if (metrics.Count == 0 && metricsError is null)
+    {
+        <EmptyState Icon="⚖️" Title="No body metrics logged yet" />
+    }
+    else if (metrics.Count > 0)
+    {
+        <div class="card mb-4">
+            <p class="mb-2 text-sm font-medium">Weight (kg)</p>
+            <LineChart Values="metrics.Select(m => m.WeightKg).ToList()" ColorClass="text-primary" />
+        </div>
+    }
+}
+
+<div class="card mb-4 flex flex-col gap-3">
+    <p class="font-medium">Log body metrics</p>
+
+    <EditForm Model="newMetric" OnValidSubmit="AddMetricAsync" class="flex flex-col gap-2">
+        <DataAnnotationsValidator />
+
+        <div>
+            <label class="label">Date</label>
+            <InputDate class="input" @bind-Value="newMetric.Date" />
+        </div>
+        <div>
+            <label class="label">Weight (kg)</label>
+            <InputNumber class="input" @bind-Value="newMetric.WeightKg" />
+            <ValidationMessage For="() => newMetric.WeightKg" class="form-error" />
+        </div>
+        <div>
+            <label class="label">Waist (cm, optional)</label>
+            <InputNumber class="input" @bind-Value="newMetric.WaistCm" />
+        </div>
+        <div>
+            <label class="label">Chest (cm, optional)</label>
+            <InputNumber class="input" @bind-Value="newMetric.ChestCm" />
+        </div>
+        <div>
+            <label class="label">Arms (cm, optional)</label>
+            <InputNumber class="input" @bind-Value="newMetric.ArmsCm" />
+        </div>
+
+        @if (isSavingMetric)
+        {
+            <LoadingIndicator Message="Saving..." />
+        }
+        else
+        {
+            <button type="submit" class="btn-primary">Add entry</button>
+        }
+
+        @if (!string.IsNullOrEmpty(savedOfflineMessage))
+        {
+            <p class="text-sm text-info">@savedOfflineMessage</p>
+        }
+    </EditForm>
+</div>
 
 @code {
     private bool isLoading = true;
     private SessionSummary? lastSession;
 
+    private bool isLoadingMetrics = true;
+    private bool isSavingMetric;
+    private string? metricsError;
+    private string? savedOfflineMessage;
+    private DateOnly? metricsFrom;
+    private DateOnly? metricsTo;
+    private List<BodyMetricLog> metrics = [];
+    private readonly NewMetricModel newMetric = new();
+
     protected override async Task OnInitializedAsync()
     {
         lastSession = await SyncService.GetLastSessionAsync();
         isLoading = false;
+        await LoadMetricsAsync();
+    }
+
+    private async Task LoadMetricsAsync()
+    {
+        isLoadingMetrics = true;
+        metricsError = null;
+        try
+        {
+            var queryParams = new List<string>();
+            if (metricsFrom is DateOnly from)
+            {
+                queryParams.Add($"from={from:yyyy-MM-dd}");
+            }
+
+            if (metricsTo is DateOnly to)
+            {
+                queryParams.Add($"to={to:yyyy-MM-dd}");
+            }
+
+            var query = queryParams.Count > 0 ? $"api/body-metrics?{string.Join('&', queryParams)}" : "api/body-metrics";
+            metrics = (await Api.GetAsync<List<BodyMetricLog>>(query)) ?? [];
+        }
+        catch (ApiException ex)
+        {
+            metricsError = ex.Message;
+        }
+        finally
+        {
+            isLoadingMetrics = false;
+        }
+    }
+
+    private async Task AddMetricAsync()
+    {
+        isSavingMetric = true;
+        savedOfflineMessage = null;
+        metricsError = null;
+        try
+        {
+            var request = new CreateBodyMetricRequest(newMetric.Date, newMetric.WeightKg, newMetric.WaistCm, newMetric.ChestCm, newMetric.ArmsCm);
+            try
+            {
+                await Api.PostAsync("api/body-metrics", request);
+                await LoadMetricsAsync();
+            }
+            catch (ApiException)
+            {
+                await SyncService.QueueWriteAsync(HttpMethod.Post, "api/body-metrics", request);
+                savedOfflineMessage = "You're offline — this entry will sync once you're back online.";
+            }
+
+            newMetric.WeightKg = 0;
+            newMetric.WaistCm = null;
+            newMetric.ChestCm = null;
+            newMetric.ArmsCm = null;
+        }
+        finally
+        {
+            isSavingMetric = false;
+        }
+    }
+
+    private class NewMetricModel
+    {
+        public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+
+        [System.ComponentModel.DataAnnotations.Range(20, 400)]
+        public decimal WeightKg { get; set; }
+
+        public decimal? WaistCm { get; set; }
+        public decimal? ChestCm { get; set; }
+        public decimal? ArmsCm { get; set; }
     }
 }

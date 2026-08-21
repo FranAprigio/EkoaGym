@@ -27,6 +27,19 @@ public class ApiClient(HttpClient httpClient)
     public Task DeleteAsync(string requestUri, CancellationToken ct = default) =>
         SendAsync(() => httpClient.DeleteAsync(requestUri, ct));
 
+    public Task<T?> PostMultipartAsync<T>(string requestUri, MultipartFormDataContent content, CancellationToken ct = default) =>
+        SendAsync<T>(() => httpClient.PostAsync(requestUri, content, ct));
+
+    // Used for authenticated binary responses (e.g. progress photo images) that can't be loaded via a plain
+    // <img src> since the browser won't attach the bearer token — callers build a data: URI from the result.
+    public async Task<(byte[] Bytes, string ContentType)> GetBytesAsync(string requestUri, CancellationToken ct = default)
+    {
+        using var response = await SendCoreAsync(() => httpClient.GetAsync(requestUri, ct));
+        var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+        var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+        return (bytes, contentType);
+    }
+
     private async Task<T?> SendAsync<T>(Func<Task<HttpResponseMessage>> send)
     {
         using var response = await SendCoreAsync(send);

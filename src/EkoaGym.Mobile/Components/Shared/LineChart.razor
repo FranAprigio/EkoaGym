@@ -1,0 +1,63 @@
+@* Minimal dependency-free SVG line chart — sufficient for simple progress trends, no charting library needed. *@
+<svg viewBox="0 0 300 100" preserveAspectRatio="none" class="h-32 w-full">
+    @if (points.Count > 1)
+    {
+        <polyline points="@PolylinePoints" fill="none" stroke-width="2" class="@ColorClass" style="stroke:currentColor" />
+        @foreach (var (x, y) in points)
+        {
+            <circle cx="@x.ToString("F1")" cy="@y.ToString("F1")" r="2.5" class="@ColorClass" style="fill:currentColor" />
+        }
+    }
+    else if (points.Count == 1)
+    {
+        <circle cx="150" cy="50" r="3" class="@ColorClass" style="fill:currentColor" />
+    }
+</svg>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<decimal> Values { get; set; } = [];
+
+    // Tailwind text-color utility class — chart uses currentColor for stroke/fill so callers can theme it
+    // (e.g. text-info for suggestions, text-accent for personal-record highlights).
+    [Parameter] public string ColorClass { get; set; } = "text-primary";
+
+    private const double Width = 300;
+    private const double Height = 100;
+    private const double Padding = 10;
+
+    private List<(double X, double Y)> points = [];
+
+    protected override void OnParametersSet()
+    {
+        points = Compute();
+    }
+
+    private string PolylinePoints => string.Join(" ", points.Select(p => $"{p.X:F1},{p.Y:F1}"));
+
+    private List<(double X, double Y)> Compute()
+    {
+        if (Values.Count == 0)
+        {
+            return [];
+        }
+
+        var min = (double)Values.Min();
+        var max = (double)Values.Max();
+        var range = max - min;
+        if (range == 0)
+        {
+            range = 1;
+        }
+
+        var result = new List<(double X, double Y)>();
+        for (var i = 0; i < Values.Count; i++)
+        {
+            var x = Padding + (Width - (2 * Padding)) * (Values.Count == 1 ? 0.5 : (double)i / (Values.Count - 1));
+            var normalized = ((double)Values[i] - min) / range;
+            var y = Height - Padding - (normalized * (Height - (2 * Padding)));
+            result.Add((x, y));
+        }
+
+        return result;
+    }
+}

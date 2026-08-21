@@ -1,0 +1,197 @@
+@page "/progress-photos"
+@using System.Net.Http.Headers
+@using Microsoft.Maui.Media
+@inject ApiClient Api
+
+<h1 class="mb-4 text-xl font-semibold">Progress Photos</h1>
+
+<div class="mb-4 flex gap-2">
+    <button type="button" class="btn-primary flex-1" @onclick="CapturePhotoAsync">Take photo</button>
+    <button type="button" class="btn-outline flex-1" @onclick="PickPhotoAsync">Choose photo</button>
+</div>
+
+@if (isUploading)
+{
+    <LoadingIndicator Message="Uploading..." />
+}
+
+<ErrorBanner Message="@errorMessage" OnRetry="LoadPhotosAsync" />
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else if (photos.Count == 0 && errorMessage is null)
+{
+    <EmptyState Icon="📸" Title="No progress photos yet" Description="Take or upload your first photo to start tracking visually." />
+}
+else
+{
+    <h2 class="mb-2 mt-2 font-medium">Compare two dates</h2>
+    <div class="mb-4 flex gap-2">
+        <select class="input" @onchange="e => OnCompareChanged(0, e)">
+            <option value="">Select a date</option>
+            @foreach (var photo in photos)
+            {
+                <option value="@photo.Id">@photo.Date.ToString("d")</option>
+            }
+        </select>
+        <select class="input" @onchange="e => OnCompareChanged(1, e)">
+            <option value="">Select a date</option>
+            @foreach (var photo in photos)
+            {
+                <option value="@photo.Id">@photo.Date.ToString("d")</option>
+            }
+        </select>
+    </div>
+
+    @if (compareLeft is not null || compareRight is not null)
+    {
+        <div class="mb-4 grid grid-cols-2 gap-2">
+            <div class="flex flex-col items-center gap-1">
+                @if (compareLeft is not null)
+                {
+                    <img src="@GetDataUri(compareLeft.Id)" alt="Comparison photo" class="h-48 w-full rounded-lg object-cover" />
+                    <p class="text-xs text-text-secondary">@compareLeft.Date.ToString("d")</p>
+                }
+            </div>
+            <div class="flex flex-col items-center gap-1">
+                @if (compareRight is not null)
+                {
+                    <img src="@GetDataUri(compareRight.Id)" alt="Comparison photo" class="h-48 w-full rounded-lg object-cover" />
+                    <p class="text-xs text-text-secondary">@compareRight.Date.ToString("d")</p>
+                }
+            </div>
+        </div>
+    }
+
+    <h2 class="mb-2 font-medium">Timeline</h2>
+    <div class="grid grid-cols-3 gap-2">
+        @foreach (var photo in photos)
+        {
+            <div class="flex flex-col items-center gap-1">
+                <img src="@GetDataUri(photo.Id)" alt="Progress photo" class="h-28 w-full rounded-lg object-cover" />
+                <p class="text-xs text-text-secondary">@photo.Date.ToString("d")</p>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private bool isUploading;
+    private string? errorMessage;
+    private List<ProgressPhotoInfo> photos = [];
+    private Dictionary<Guid, string> imageDataUris = [];
+    private ProgressPhotoInfo? compareLeft;
+    private ProgressPhotoInfo? compareRight;
+
+    protected override Task OnInitializedAsync() => LoadPhotosAsync();
+
+    private async Task LoadPhotosAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            photos = (await Api.GetAsync<List<ProgressPhotoInfo>>("api/progress-photos"))?
+                .OrderByDescending(p => p.Date).ToList() ?? [];
+
+            var results = await Task.WhenAll(photos.Select(async p =>
+            {
+                var (bytes, contentType) = await Api.GetBytesAsync(p.ImageUrl);
+                return (p.Id, Uri: $"data:{contentType};base64,{Convert.ToBase64String(bytes)}");
+            }));
+
+            imageDataUris = results.ToDictionary(r => r.Id, r => r.Uri);
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetDataUri(Guid id) => imageDataUris.GetValueOrDefault(id, string.Empty);
+
+    private void OnCompareChanged(int slot, ChangeEventArgs e)
+    {
+        var photo = Guid.TryParse(e.Value?.ToString(), out var id) ? photos.FirstOrDefault(p => p.Id == id) : null;
+        if (slot == 0)
+        {
+            compareLeft = photo;
+        }
+        else
+        {
+            compareRight = photo;
+        }
+    }
+
+    private async Task CapturePhotoAsync()
+    {
+        try
+        {
+            if (!MediaPicker.Default.IsCaptureSupported)
+            {
+                errorMessage = "Camera capture isn't supported on this device.";
+                return;
+            }
+
+            var photo = await MediaPicker.Default.CapturePhotoAsync();
+            if (photo is not null)
+            {
+                await UploadAsync(photo);
+            }
+        }
+        catch
+        {
+            errorMessage = "Couldn't access the camera.";
+        }
+    }
+
+    private async Task PickPhotoAsync()
+    {
+        try
+        {
+            var pickedPhotos = await MediaPicker.Default.PickPhotosAsync();
+            var photo = pickedPhotos.FirstOrDefault();
+            if (photo is not null)
+            {
+                await UploadAsync(photo);
+            }
+        }
+        catch
+        {
+            errorMessage = "Couldn't access your photos.";
+        }
+    }
+
+    private async Task UploadAsync(FileResult file)
+    {
+        isUploading = true;
+        errorMessage = null;
+        try
+        {
+            await using var stream = await file.OpenReadAsync();
+            using var content = new MultipartFormDataContent();
+            using var streamContent = new StreamContent(stream);
+            streamContent.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrEmpty(file.ContentType) ? "image/jpeg" : file.ContentType);
+            content.Add(streamContent, "File", file.FileName);
+            content.Add(new StringContent(DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd")), "Date");
+
+            await Api.PostMultipartAsync<ProgressPhotoInfo>("api/progress-photos", content);
+            await LoadPhotosAsync();
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+}

@@ -28,5 +28,9 @@
     </array>
     <key>XSAppIconAssets</key>
     <string>Assets.xcassets/appicon.appiconset</string>
+    <key>NSCameraUsageDescription</key>
+    <string>EkoaGym uses the camera to take progress photos.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>EkoaGym uses your photo library to select progress photos.</string>
 </dict>
 </plist>
