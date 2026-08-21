@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  FitTrack design tokens.
+  Values are "R G B" triplets so Tailwind's rgb(var(--x) / <alpha-value>) syntax can apply opacity.
+  Components must always reference the semantic Tailwind classes (bg-primary, text-danger, ...)
+  generated from these tokens — never hardcode hex colors inside a .razor file.
+*/
+:root {
+  --color-primary: 232 115 74;       /* Coral #E8734A */
+  --color-secondary: 242 166 90;     /* Amber #F2A65A */
+  --color-accent: 127 176 105;       /* Sage green #7FB069 */
+  --color-info: 107 163 196;         /* Soft blue #6BA3C4 */
+  --color-danger: 232 93 78;         /* Warm red #E85D4E */
+  --color-background: 255 249 243;   /* Cream #FFF9F3 */
+  --color-surface: 255 255 255;      /* White */
+  --color-text-primary: 58 46 40;    /* Warm charcoal #3A2E28 */
+  --color-text-secondary: 138 126 118; /* Warm gray #8A7E76 */
+  --color-border: 232 221 211;       /* Soft warm border */
+}
+
+.dark {
+  --color-primary: 232 115 74;
+  --color-secondary: 242 166 90;
+  --color-accent: 127 176 105;
+  --color-info: 107 163 196;
+  --color-danger: 232 93 78;
+  --color-background: 36 30 26;      /* Deep charcoal */
+  --color-surface: 50 41 34;         /* Slightly lighter charcoal */
+  --color-text-primary: 255 249 243; /* Cream */
+  --color-text-secondary: 184 171 161; /* Light warm gray */
+  --color-border: 74 61 52;
+}
+
+@layer base {
+  html, body {
+    @apply bg-background text-text-primary;
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium
+           transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-white hover:opacity-90;
+  }
+  .btn-secondary {
+    @apply btn bg-secondary text-white hover:opacity-90;
+  }
+  .btn-accent {
+    @apply btn bg-accent text-white hover:opacity-90;
+  }
+  .btn-outline {
+    @apply btn border bg-transparent text-text-primary hover:bg-surface;
+  }
+  .btn-danger {
+    @apply btn bg-danger text-white hover:opacity-90;
+  }
+
+  /* Cards */
+  .card {
+    @apply rounded-xl border bg-surface p-4 shadow-sm;
+  }
+
+  /* Inputs & labels */
+  .label {
+    @apply mb-1 block text-sm font-medium text-text-secondary;
+  }
+  .input {
+    @apply w-full rounded-lg border bg-surface px-3 py-2 text-text-primary
+           placeholder:text-text-secondary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary;
+  }
+  .input-error {
+    @apply border-danger focus:border-danger focus:ring-danger;
+  }
+  .form-error {
+    @apply mt-1 text-sm text-danger;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply inline-block h-6 w-6 animate-spin rounded-full border-2 border-t-primary;
+  }
+
+  /* Error banner */
+  .error-banner {
+    @apply flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger;
+  }
+
+  /* Empty state */
+  .empty-state {
+    @apply flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed
+           px-6 py-10 text-center text-text-secondary;
+  }
+
+  /* Offline banner */
+  .offline-banner {
+    @apply flex items-center justify-center gap-2 bg-secondary/20 px-4 py-2 text-sm font-medium text-text-primary;
+  }
+}

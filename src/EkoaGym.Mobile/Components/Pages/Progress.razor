@@ -1,0 +1,33 @@
+@page "/progress"
+@inject ISyncService SyncService
+
+<h1 class="mb-4 text-xl font-semibold">Progress</h1>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else if (lastSession is null)
+{
+    <EmptyState Icon="📈" Title="No progress yet" Description="Complete a workout session to start tracking progress." />
+}
+else
+{
+    <div class="card">
+        <p class="font-medium">Last completed session</p>
+        <p class="text-sm text-text-secondary">@lastSession.PlanName</p>
+        <p class="text-sm">Total volume: @lastSession.TotalVolumeKg kg</p>
+        <p class="text-sm">Exercises: @lastSession.ExerciseCount</p>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private SessionSummary? lastSession;
+
+    protected override async Task OnInitializedAsync()
+    {
+        lastSession = await SyncService.GetLastSessionAsync();
+        isLoading = false;
+    }
+}

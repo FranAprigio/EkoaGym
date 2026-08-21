@@ -1,0 +1,88 @@
+@page "/register"
+@layout AuthLayout
+@inject ApiClient Api
+@inject ITokenStore TokenStore
+@inject AuthState AuthState
+@inject NavigationManager Navigation
+
+<h1 class="mb-6 text-center text-xl font-semibold">Create your account</h1>
+
+<EditForm Model="model" OnValidSubmit="HandleRegisterAsync" class="flex flex-col gap-4">
+    <DataAnnotationsValidator />
+
+    <div>
+        <label class="label" for="name">Name</label>
+        <InputText id="name" class="input" @bind-Value="model.Name" />
+        <ValidationMessage For="() => model.Name" class="form-error" />
+    </div>
+
+    <div>
+        <label class="label" for="email">Email</label>
+        <InputText id="email" class="input" @bind-Value="model.Email" />
+        <ValidationMessage For="() => model.Email" class="form-error" />
+    </div>
+
+    <div>
+        <label class="label" for="password">Password</label>
+        <InputText id="password" type="password" class="input" @bind-Value="model.Password" />
+        <ValidationMessage For="() => model.Password" class="form-error" />
+    </div>
+
+    <ErrorBanner Message="@errorMessage" />
+
+    @if (isSubmitting)
+    {
+        <LoadingIndicator Message="Creating account..." />
+    }
+    else
+    {
+        <button type="submit" class="btn-primary">Register</button>
+    }
+
+    <a href="/login" class="text-center text-sm text-text-secondary underline">Already have an account? Log in</a>
+</EditForm>
+
+@code {
+    private readonly RegisterModel model = new();
+    private string? errorMessage;
+    private bool isSubmitting;
+
+    private async Task HandleRegisterAsync()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+        try
+        {
+            var response = await Api.PostAsync<AuthResponse>("api/auth/register", new RegisterRequest(model.Email, model.Password, model.Name));
+            if (response is null)
+            {
+                errorMessage = "Something went wrong. Please try again.";
+                return;
+            }
+
+            await TokenStore.SaveTokensAsync(response.AccessToken, response.RefreshToken);
+            AuthState.SignIn();
+            Navigation.NavigateTo("/");
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private class RegisterModel
+    {
+        [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(200, MinimumLength = 1)]
+        public string Name { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Password { get; set; } = string.Empty;
+    }
+}

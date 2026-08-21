@@ -1,0 +1,39 @@
+@page "/exercises"
+@inject ISyncService SyncService
+
+<h1 class="mb-4 text-xl font-semibold">Exercise Library</h1>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else if (exercises.Count == 0)
+{
+    <EmptyState Icon="📋" Title="No exercises found" />
+}
+else
+{
+    <div class="flex flex-col gap-2">
+        @foreach (var exercise in exercises)
+        {
+            <div class="card flex items-center justify-between">
+                <div>
+                    <p class="font-medium">@exercise.Name</p>
+                    <p class="text-sm text-text-secondary">@exercise.MuscleGroup · @exercise.Equipment</p>
+                </div>
+                <span class="text-xs text-text-secondary">@exercise.Difficulty</span>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private IReadOnlyList<ExerciseSummary> exercises = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        exercises = await SyncService.GetExercisesAsync();
+        isLoading = false;
+    }
+}

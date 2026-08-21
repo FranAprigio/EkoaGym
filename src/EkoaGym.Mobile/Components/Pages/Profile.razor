@@ -1,0 +1,68 @@
+@page "/profile"
+@inject ApiClient Api
+@inject ITokenStore TokenStore
+@inject AuthState AuthState
+@inject NavigationManager Navigation
+
+<h1 class="mb-4 text-xl font-semibold">Profile</h1>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <ErrorBanner Message="@errorMessage" OnRetry="LoadProfileAsync" />
+
+    @if (profile is not null)
+    {
+        <div class="card mb-4 flex flex-col gap-1">
+            <p class="font-medium">@profile.Name</p>
+            <p class="text-sm text-text-secondary">@profile.Sex · @profile.HeightCm cm · @profile.CurrentWeightKg kg</p>
+            <p class="text-sm text-text-secondary">Activity level: @profile.ActivityLevel</p>
+        </div>
+    }
+    else if (errorMessage is null)
+    {
+        <EmptyState Icon="👤" Title="No profile yet" Description="Complete your profile to personalize your plan." />
+    }
+
+    <button type="button" class="btn-outline" @onclick="LogoutAsync">Log out</button>
+}
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+    private ProfileSummary? profile;
+
+    protected override Task OnInitializedAsync() => LoadProfileAsync();
+
+    private async Task LoadProfileAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            profile = await Api.GetAsync<ProfileSummary>("api/profile");
+        }
+        catch (ApiException ex) when (ex.StatusCode == 404)
+        {
+            profile = null;
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        await TokenStore.ClearAsync();
+        AuthState.SignOut();
+        Navigation.NavigateTo("/login");
+    }
+}

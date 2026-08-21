@@ -1,0 +1,20 @@
+@* Reusable placeholder for lists/screens with no data yet. *@
+<div class="empty-state">
+    <span class="text-3xl">@Icon</span>
+    <p class="font-medium text-text-primary">@Title</p>
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <p class="text-sm">@Description</p>
+    }
+    @if (ChildContent is not null)
+    {
+        <div class="mt-2">@ChildContent</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "📭";
+    [Parameter] public string Title { get; set; } = "Nothing here yet";
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

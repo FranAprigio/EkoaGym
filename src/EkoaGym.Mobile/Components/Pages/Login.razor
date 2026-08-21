@@ -1,0 +1,79 @@
+@page "/login"
+@layout AuthLayout
+@inject ApiClient Api
+@inject ITokenStore TokenStore
+@inject AuthState AuthState
+@inject NavigationManager Navigation
+
+<h1 class="mb-6 text-center text-xl font-semibold">Log in</h1>
+
+<EditForm Model="model" OnValidSubmit="HandleLoginAsync" class="flex flex-col gap-4">
+    <DataAnnotationsValidator />
+
+    <div>
+        <label class="label" for="email">Email</label>
+        <InputText id="email" class="input" @bind-Value="model.Email" />
+        <ValidationMessage For="() => model.Email" class="form-error" />
+    </div>
+
+    <div>
+        <label class="label" for="password">Password</label>
+        <InputText id="password" type="password" class="input" @bind-Value="model.Password" />
+        <ValidationMessage For="() => model.Password" class="form-error" />
+    </div>
+
+    <ErrorBanner Message="@errorMessage" />
+
+    @if (isSubmitting)
+    {
+        <LoadingIndicator Message="Signing in..." />
+    }
+    else
+    {
+        <button type="submit" class="btn-primary">Log in</button>
+    }
+
+    <a href="/register" class="text-center text-sm text-text-secondary underline">Need an account? Register</a>
+</EditForm>
+
+@code {
+    private readonly LoginModel model = new();
+    private string? errorMessage;
+    private bool isSubmitting;
+
+    private async Task HandleLoginAsync()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+        try
+        {
+            var response = await Api.PostAsync<AuthResponse>("api/auth/login", new LoginRequest(model.Email, model.Password));
+            if (response is null)
+            {
+                errorMessage = "Something went wrong. Please try again.";
+                return;
+            }
+
+            await TokenStore.SaveTokensAsync(response.AccessToken, response.RefreshToken);
+            AuthState.SignIn();
+            Navigation.NavigateTo("/");
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private class LoginModel
+    {
+        [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Password { get; set; } = string.Empty;
+    }
+}

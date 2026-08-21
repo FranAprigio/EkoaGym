@@ -1,0 +1,56 @@
+﻿@page "/"
+@inject ISyncService SyncService
+
+<h1 class="mb-4 text-xl font-semibold">Welcome back</h1>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <div class="flex flex-col gap-4">
+        <div class="card">
+            <h2 class="mb-2 font-medium">Last session</h2>
+            @if (lastSession is null)
+            {
+                <EmptyState Icon="🏋️" Title="No sessions yet" Description="Start a workout to see your progress here." />
+            }
+            else
+            {
+                <p class="text-sm text-text-secondary">@lastSession.PlanName</p>
+                <p class="text-sm">Total volume: @lastSession.TotalVolumeKg kg</p>
+            }
+        </div>
+
+        <div class="card">
+            <h2 class="mb-2 font-medium">Your plans</h2>
+            @if (plans.Count == 0)
+            {
+                <EmptyState Icon="📋" Title="No workout plans yet" />
+            }
+            else
+            {
+                <ul class="flex flex-col gap-1">
+                    @foreach (var plan in plans)
+                    {
+                        <li class="text-sm">@plan.Name (@plan.ExerciseCount exercises)</li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private IReadOnlyList<PlanSummary> plans = [];
+    private SessionSummary? lastSession;
+
+    protected override async Task OnInitializedAsync()
+    {
+        plans = await SyncService.GetPlansAsync();
+        lastSession = await SyncService.GetLastSessionAsync();
+        isLoading = false;
+    }
+}

@@ -1,0 +1,17 @@
+@* Displays a user-friendly error message, e.g. produced by ApiClient/ApiException. *@
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <div class="error-banner" role="alert">
+        <span class="font-semibold">!</span>
+        <span>@Message</span>
+        @if (OnRetry.HasDelegate)
+        {
+            <button type="button" class="ms-auto underline" @onclick="OnRetry">Retry</button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public EventCallback OnRetry { get; set; }
+}

@@ -1,0 +1,9 @@
+@* Reusable loading spinner shown while a Razor component awaits ApiClient/SyncService data. *@
+<div class="flex flex-col items-center justify-center gap-3 py-8" role="status" aria-live="polite">
+    <span class="spinner"></span>
+    <span class="text-sm text-text-secondary">@Message</span>
+</div>
+
+@code {
+    [Parameter] public string Message { get; set; } = "Loading...";
+}

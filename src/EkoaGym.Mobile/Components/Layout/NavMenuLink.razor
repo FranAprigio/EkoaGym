@@ -1,0 +1,12 @@
+@* Single tab item. Kept separate from NavMenu so the active/inactive styling lives in one place. *@
+<NavLink href="@Href" Match="@Match" class="flex flex-col items-center gap-0.5 px-2 text-xs text-text-secondary" ActiveClass="!text-primary font-semibold">
+    <span class="text-lg leading-none">@Icon</span>
+    <span>@Label</span>
+</NavLink>
+
+@code {
+    [Parameter, EditorRequired] public string Href { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public NavLinkMatch Match { get; set; } = NavLinkMatch.Prefix;
+}

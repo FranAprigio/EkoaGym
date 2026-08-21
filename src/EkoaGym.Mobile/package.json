@@ -1,0 +1,13 @@
+{
+  "name": "ekoagym-mobile-styles",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Tailwind CSS build pipeline for the EkoaGym.Mobile MAUI Blazor Hybrid app",
+  "scripts": {
+    "build:css": "tailwindcss -i ./Styles/app.tailwind.css -o ./wwwroot/css/app.css --minify",
+    "watch:css": "tailwindcss -i ./Styles/app.tailwind.css -o ./wwwroot/css/app.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.13"
+  }
+}

@@ -1,0 +1,31 @@
+@* Shown app-wide whenever IConnectivityService reports no network access. *@
+@inject IConnectivityService Connectivity
+@implements IDisposable
+
+@if (!isOnline)
+{
+    <div class="offline-banner">
+        <span>You're offline — showing cached data.</span>
+    </div>
+}
+
+@code {
+    private bool isOnline = true;
+
+    protected override void OnInitialized()
+    {
+        isOnline = Connectivity.IsConnected;
+        Connectivity.ConnectivityChanged += OnConnectivityChanged;
+    }
+
+    private void OnConnectivityChanged(object? sender, bool connected)
+    {
+        isOnline = connected;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Connectivity.ConnectivityChanged -= OnConnectivityChanged;
+    }
+}

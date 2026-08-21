@@ -1,0 +1,36 @@
+@page "/my-workout"
+@inject ISyncService SyncService
+
+<h1 class="mb-4 text-xl font-semibold">My Workout</h1>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else if (plans.Count == 0)
+{
+    <EmptyState Icon="🏋️" Title="No workout plans yet" Description="Create a plan to get started." />
+}
+else
+{
+    <div class="flex flex-col gap-3">
+        @foreach (var plan in plans)
+        {
+            <div class="card">
+                <p class="font-medium">@plan.Name</p>
+                <p class="text-sm text-text-secondary">@plan.ExerciseCount exercises</p>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private IReadOnlyList<PlanSummary> plans = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        plans = await SyncService.GetPlansAsync();
+        isLoading = false;
+    }
+}

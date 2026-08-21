@@ -1,0 +1,50 @@
+﻿@inherits LayoutComponentBase
+@inject ISyncService SyncService
+@inject ITokenStore TokenStore
+@inject AuthState AuthState
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<div class="flex min-h-screen flex-col bg-background text-text-primary">
+    <OfflineBanner />
+
+    <main class="flex-1 overflow-y-auto px-4 pb-20 pt-4">
+        @Body
+    </main>
+
+    <NavMenu />
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AuthState.AuthenticationExpired += OnAuthenticationExpired;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // AuthState is a fresh in-memory singleton on every app launch — re-derive it from whatever
+        // token SecureStorage still has before deciding whether this authenticated shell may load.
+        var accessToken = await TokenStore.GetAccessTokenAsync();
+        if (string.IsNullOrEmpty(accessToken))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        AuthState.SignIn();
+
+        // Refresh cached plans/exercises/last session as soon as the authenticated shell loads.
+        await SyncService.RefreshAsync();
+    }
+
+    private void OnAuthenticationExpired()
+    {
+        InvokeAsync(() => Navigation.NavigateTo("/login"));
+    }
+
+    public void Dispose()
+    {
+        AuthState.AuthenticationExpired -= OnAuthenticationExpired;
+    }
+}
