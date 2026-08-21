@@ -22,6 +22,43 @@ namespace EkoaGym.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("EkoaGym.Domain.Entities.BodyMetricLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("ArmsCm")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal?>("ChestCm")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("WaistCm")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal>("WeightKg")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date");
+
+                    b.ToTable("BodyMetricLogs");
+                });
+
             modelBuilder.Entity("EkoaGym.Domain.Entities.Exercise", b =>
                 {
                     b.Property<Guid>("Id")
@@ -616,6 +653,37 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.ToTable("Goals");
                 });
 
+            modelBuilder.Entity("EkoaGym.Domain.Entities.ProgressPhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date");
+
+                    b.ToTable("ProgressPhotos");
+                });
+
             modelBuilder.Entity("EkoaGym.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -864,7 +932,29 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.ToTable("WorkoutSessions");
                 });
 
+            modelBuilder.Entity("EkoaGym.Domain.Entities.BodyMetricLog", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EkoaGym.Domain.Entities.Goal", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.ProgressPhoto", b =>
                 {
                     b.HasOne("EkoaGym.Domain.Entities.User", "User")
                         .WithMany()

@@ -111,3 +111,13 @@ CORS allowed origins for the mobile app are configured under `Cors:AllowedOrigin
 - Session ownership uses **404** (not the 403 used by `/api/plans`) for another user's session — no 403 was requested for this epic, so it follows the more conservative "hide existence" default used by Goals/Profile instead.
 - This epic formalizes `WorkoutSession` as a real entity and reshapes `SessionSetLog` (added as a placeholder in the Workout Plans epic) to reference it via `SessionId` instead of loose `UserId`/`PlanId` columns, with `ActualReps`/`ActualWeightKg` field names — see migration `AddWorkoutSessions`.
 
+## Progress tracking
+
+- `GET/POST /api/body-metrics` — `{ date, weightKg, waistCm?, chestCm?, armsCm? }`. `GET` supports `?from=`/`?to=` (date range) and always returns entries **ascending by date** (oldest first, suited for charting). No update/delete — only create/list were requested.
+- `POST /api/progress-photos` — `multipart/form-data` with a `File` (JPEG/PNG/WEBP only, 10MB max) and a `Date` field. `GET /api/progress-photos` returns photos **descending by date** (most recent first, suited for a gallery/timeline).
+  - **Security note**: progress photos are private body photos, not public reference data like exercise images, so uploads are **not** served via a public static-file path. Each photo is fetched through an authenticated `GET /api/progress-photos/{id}/image` endpoint that verifies the requesting user owns the photo before streaming it from disk (404 otherwise). Filenames on disk are derived only from the photo's own GUID + a whitelisted extension (never from client-supplied filenames), avoiding path traversal.
+  - `ProgressPhoto` has a `ContentType` column beyond the original tech note — needed to know what MIME type/extension to serve back through the streaming endpoint.
+- `GET /api/exercises/{exerciseId}/progress` — time-ordered series (one point per session that logged the exercise), each with `bestSetReps`/`bestSetWeightKg` (the set with the highest weight×reps that session), `totalVolumeKg`, `totalSets`, `totalReps`, and `isWeightPR`/`isRepPR` flags computed chronologically against all prior sessions (no PR table — computed at query time). Supports `?from=`/`?to=` (matched against session start). 404 if the exercise doesn't exist; empty array (not an error) if the user never logged it.
+  - This lives in its own `ExerciseProgressController` (`[Authorize]`), not inside `ExercisesController` — that controller is `[AllowAnonymous]`, and ASP.NET Core's `[AllowAnonymous]` on a controller cannot be overridden by `[Authorize]` on one of its actions (it short-circuits auth checks for the whole endpoint regardless).
+
+

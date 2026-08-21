@@ -1,18 +1,24 @@
 using System.Text;
 using EkoaGym.Api.ExceptionHandling;
 using EkoaGym.Application.Auth;
+using EkoaGym.Application.BodyMetrics;
 using EkoaGym.Application.Common.Configuration;
 using EkoaGym.Application.Exercises;
 using EkoaGym.Application.Goals;
 using EkoaGym.Application.Plans;
 using EkoaGym.Application.Profiles;
+using EkoaGym.Application.Progress;
+using EkoaGym.Application.ProgressPhotos;
 using EkoaGym.Application.Sessions;
 using EkoaGym.Domain.Entities;
+using EkoaGym.Infrastructure.BodyMetrics;
 using EkoaGym.Infrastructure.Exercises;
 using EkoaGym.Infrastructure.Goals;
 using EkoaGym.Infrastructure.Persistence;
 using EkoaGym.Infrastructure.Plans;
 using EkoaGym.Infrastructure.Profiles;
+using EkoaGym.Infrastructure.Progress;
+using EkoaGym.Infrastructure.ProgressPhotos;
 using EkoaGym.Infrastructure.Security;
 using EkoaGym.Infrastructure.Sessions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -38,6 +44,10 @@ builder.Services.AddDbContext<EkoaGymDbContext>(options =>
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<ProgressionOptions>(builder.Configuration.GetSection(ProgressionOptions.SectionName));
+builder.Services.Configure<FileStorageOptions>(options =>
+{
+    options.UploadsRootPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
+});
 
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
@@ -48,6 +58,9 @@ builder.Services.AddScoped<IExerciseService, ExerciseService>();
 builder.Services.AddScoped<IWorkoutPlanService, WorkoutPlanService>();
 builder.Services.AddScoped<IProgressionService, ProgressionService>();
 builder.Services.AddScoped<IWorkoutSessionService, WorkoutSessionService>();
+builder.Services.AddScoped<IBodyMetricService, BodyMetricService>();
+builder.Services.AddScoped<IProgressPhotoService, ProgressPhotoService>();
+builder.Services.AddScoped<IExerciseProgressService, ExerciseProgressService>();
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

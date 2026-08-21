@@ -15,6 +15,8 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
     public DbSet<WorkoutPlanExercise> WorkoutPlanExercises => Set<WorkoutPlanExercise>();
     public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
     public DbSet<SessionSetLog> SessionSetLogs => Set<SessionSetLog>();
+    public DbSet<BodyMetricLog> BodyMetricLogs => Set<BodyMetricLog>();
+    public DbSet<ProgressPhoto> ProgressPhotos => Set<ProgressPhoto>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -133,6 +135,32 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
                 .WithMany()
                 .HasForeignKey(s => s.ExerciseId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BodyMetricLog>(entity =>
+        {
+            entity.HasKey(b => b.Id);
+            entity.Property(b => b.WeightKg).HasColumnType("decimal(6,2)");
+            entity.Property(b => b.WaistCm).HasColumnType("decimal(6,2)");
+            entity.Property(b => b.ChestCm).HasColumnType("decimal(6,2)");
+            entity.Property(b => b.ArmsCm).HasColumnType("decimal(6,2)");
+            entity.HasIndex(b => new { b.UserId, b.Date });
+            entity.HasOne(b => b.User)
+                .WithMany()
+                .HasForeignKey(b => b.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProgressPhoto>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.ImageUrl).IsRequired();
+            entity.Property(p => p.ContentType).IsRequired().HasMaxLength(100);
+            entity.HasIndex(p => new { p.UserId, p.Date });
+            entity.HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
