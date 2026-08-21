@@ -1,5 +1,132 @@
 @page "/schedule"
+@inject ISyncService SyncService
+@inject ApiClient Api
+@inject NavigationManager Navigation
 
-<h1 class="mb-4 text-xl font-semibold">Schedule</h1>
+<div class="mb-4 flex items-center justify-between">
+    <button type="button" class="btn-outline" @onclick="() => ChangeWeek(-1)">&lt; Prev</button>
+    <h1 class="text-lg font-semibold">@weekStart.ToString("MMM d") - @weekStart.AddDays(6).ToString("MMM d")</h1>
+    <button type="button" class="btn-outline" @onclick="() => ChangeWeek(1)">Next &gt;</button>
+</div>
 
-<EmptyState Icon="🗓️" Title="Coming soon" Description="Workout scheduling will appear here in a future update." />
+@if (!isCurrentWeek)
+{
+    <button type="button" class="btn-outline mb-4 w-full" @onclick="GoToCurrentWeek">Back to this week</button>
+}
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <ErrorBanner Message="@errorMessage" OnRetry="LoadWeekAsync" />
+
+    @if (plans.Count == 0 && errorMessage is null)
+    {
+        <EmptyState Icon="🗓️" Title="No workout plans yet" Description="Create a plan to start building your schedule." />
+    }
+    else
+    {
+        <div class="flex flex-col gap-2">
+            @for (var i = 0; i < 7; i++)
+            {
+                var day = weekStart.AddDays(i);
+                var daySessions = sessions.Where(s => DateOnly.FromDateTime(s.StartedAt) == day).ToList();
+                var assignedPlan = PlanScheduler.GetPlanForDate(plans, day);
+                var status = daySessions.Count > 0
+                    ? "Completed"
+                    : day < today ? "Missed" : "Upcoming";
+                var statusClass = status switch
+                {
+                    "Completed" => "text-accent",
+                    "Missed" => "text-danger",
+                    _ => "text-info",
+                };
+
+                <div class="card @(day == today ? "border-primary" : "")">
+                    <div class="flex items-center justify-between">
+                        <p class="font-medium">@day.ToString("dddd, MMM d")@(day == today ? " (Today)" : "")</p>
+                        <span class="text-sm font-semibold @statusClass">@status</span>
+                    </div>
+
+                    @if (daySessions.Count > 0)
+                    {
+                        @foreach (var session in daySessions)
+                        {
+                            <p class="text-sm text-text-secondary">@session.PlanName — @session.TotalVolumeKg kg</p>
+                        }
+                    }
+                    else if (assignedPlan is not null)
+                    {
+                        <p class="text-sm text-text-secondary">@assignedPlan.Name (@assignedPlan.ExerciseCount exercise(s))</p>
+                        @if (day == today)
+                        {
+                            <button type="button" class="btn-primary mt-2 w-full" @onclick="() => StartWorkout(assignedPlan.Id)">Start Workout</button>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private DateOnly today;
+    private DateOnly weekStart;
+    private List<PlanSummary> plans = [];
+    private List<SessionSummary> sessions = [];
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private bool isCurrentWeek => weekStart == StartOfWeek(today);
+
+    protected override async Task OnInitializedAsync()
+    {
+        today = DateOnly.FromDateTime(DateTime.Today);
+        weekStart = StartOfWeek(today);
+        plans = (await SyncService.GetPlansAsync()).ToList();
+        await LoadWeekAsync();
+    }
+
+    private static DateOnly StartOfWeek(DateOnly date)
+    {
+        var diff = ((int)date.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+        return date.AddDays(-diff);
+    }
+
+    private async Task LoadWeekAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var weekEnd = weekStart.AddDays(6);
+            var result = await Api.GetAsync<PagedResult<SessionSummary>>(
+                $"api/sessions?from={weekStart:yyyy-MM-dd}&to={weekEnd:yyyy-MM-dd}&page=1&pageSize=50");
+            sessions = result?.Items.ToList() ?? [];
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private Task ChangeWeek(int weeks)
+    {
+        weekStart = weekStart.AddDays(7 * weeks);
+        return LoadWeekAsync();
+    }
+
+    private Task GoToCurrentWeek()
+    {
+        weekStart = StartOfWeek(today);
+        return LoadWeekAsync();
+    }
+
+    private void StartWorkout(Guid planId) => Navigation.NavigateTo($"/active-workout/{planId}");
+}

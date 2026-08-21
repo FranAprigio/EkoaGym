@@ -1,5 +1,10 @@
 ﻿@page "/"
 @inject ISyncService SyncService
+@inject ApiClient Api
+@inject LocalDatabaseService Db
+@inject NavigationManager Navigation
+@using System.Text.Json
+@using EkoaGym.Mobile.Services.Data.Entities
 
 <h1 class="mb-4 text-xl font-semibold">Welcome back</h1>
 
@@ -10,31 +15,70 @@
 else
 {
     <div class="flex flex-col gap-4">
+        @if (activeSessionPlanId is Guid activeId)
+        {
+            <button type="button" class="card flex w-full items-center justify-between border-info" @onclick="() => GoToActiveWorkout(activeId)">
+                <span>Resume "@activeSessionPlanName" workout</span>
+                <span class="text-info">Resume</span>
+            </button>
+        }
+        else if (todaysPlan is not null)
+        {
+            <div class="card">
+                <h2 class="mb-1 font-medium">Today's workout</h2>
+                <p class="text-sm text-text-secondary">@todaysPlan.Name (@todaysPlan.ExerciseCount exercise(s))</p>
+                <button type="button" class="btn-primary mt-3 w-full" @onclick="() => GoToActiveWorkout(todaysPlan.Id)">Start Workout</button>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <EmptyState Icon="🏋️" Title="No workout plans yet" Description="Create a plan to get your schedule started." />
+                <button type="button" class="btn-primary mt-3 w-full" @onclick='() => Navigation.NavigateTo("/plans/new")'>Create a plan</button>
+            </div>
+        }
+
         <div class="card">
-            <h2 class="mb-2 font-medium">Last session</h2>
-            @if (lastSession is null)
+            <h2 class="mb-2 font-medium">Active goals</h2>
+            @if (goals.Count == 0)
             {
-                <EmptyState Icon="🏋️" Title="No sessions yet" Description="Start a workout to see your progress here." />
+                <EmptyState Icon="🎯" Title="No goals yet" />
             }
             else
             {
-                <p class="text-sm text-text-secondary">@lastSession.PlanName</p>
-                <p class="text-sm">Total volume: @lastSession.TotalVolumeKg kg</p>
+                <div class="flex flex-col gap-3">
+                    @foreach (var goal in goals)
+                    {
+                        var progress = ComputeGoalProgress(goal);
+                        <div>
+                            <p class="text-sm font-medium">@goal.Type</p>
+                            @if (progress.Fraction is double fraction)
+                            {
+                                <div class="mt-1 h-2 w-full rounded-full bg-background">
+                                    <div class="h-2 rounded-full bg-accent" style="width: @((fraction * 100).ToString("F0"))%"></div>
+                                </div>
+                            }
+                            <p class="text-xs text-text-secondary">@progress.Label</p>
+                        </div>
+                    }
+                </div>
             }
         </div>
 
         <div class="card">
-            <h2 class="mb-2 font-medium">Your plans</h2>
-            @if (plans.Count == 0)
+            <h2 class="mb-2 font-medium">Recent activity</h2>
+            @if (recentSessions.Count == 0)
             {
-                <EmptyState Icon="📋" Title="No workout plans yet" />
+                <EmptyState Icon="🕘" Title="No recent activity" Description="Start a workout to see your progress here." />
             }
             else
             {
                 <ul class="flex flex-col gap-1">
-                    @foreach (var plan in plans)
+                    @foreach (var session in recentSessions)
                     {
-                        <li class="text-sm">@plan.Name (@plan.ExerciseCount exercises)</li>
+                        <li class="text-sm">
+                            <span class="text-text-secondary">@session.StartedAt.ToString("d")</span> — @session.PlanName (@session.TotalVolumeKg kg)
+                        </li>
                     }
                 </ul>
             }
@@ -44,13 +88,59 @@ else
 
 @code {
     private bool isLoading = true;
-    private IReadOnlyList<PlanSummary> plans = [];
-    private SessionSummary? lastSession;
+    private List<PlanSummary> plans = [];
+    private List<GoalSummary> goals = [];
+    private List<BodyMetricLog> bodyMetrics = [];
+    private List<SessionSummary> recentSessions = [];
+    private PlanSummary? todaysPlan;
+    private Guid? activeSessionPlanId;
+    private string? activeSessionPlanName;
 
     protected override async Task OnInitializedAsync()
     {
-        plans = await SyncService.GetPlansAsync();
-        lastSession = await SyncService.GetLastSessionAsync();
+        plans = (await SyncService.GetPlansAsync()).ToList();
+        todaysPlan = PlanScheduler.GetPlanForDate(plans, DateOnly.FromDateTime(DateTime.Today));
+
+        var activeRow = await Db.GetActiveSessionAsync();
+        var activeState = activeRow is null ? null : JsonSerializer.Deserialize<ActiveWorkoutState>(activeRow.PayloadJson);
+        activeSessionPlanId = activeState?.PlanId;
+        activeSessionPlanName = activeState?.PlanName;
+
+        try
+        {
+            goals = (await Api.GetAsync<List<GoalSummary>>("api/goals")) ?? [];
+            bodyMetrics = (await Api.GetAsync<List<BodyMetricLog>>("api/body-metrics")) ?? [];
+            var sessions = await Api.GetAsync<PagedResult<SessionSummary>>("api/sessions?page=1&pageSize=3");
+            recentSessions = sessions?.Items.ToList() ?? [];
+        }
+        catch (ApiException)
+        {
+            // Offline or API unavailable — the dashboard still shows the plan/resume sections above.
+        }
+
         isLoading = false;
     }
+
+    private (double? Fraction, string Label) ComputeGoalProgress(GoalSummary goal)
+    {
+        if (goal.Type is GoalTypes.WeightLoss or GoalTypes.WeightGain)
+        {
+            var ordered = bodyMetrics.OrderBy(m => m.Date).ToList();
+            var baseline = ordered.Count > 0 ? ordered[0].WeightKg : (decimal?)null;
+            var current = ordered.Count > 0 ? ordered[^1].WeightKg : (decimal?)null;
+
+            if (baseline is decimal b && current is decimal c && b != goal.TargetValue)
+            {
+                var fraction = (double)((c - b) / (goal.TargetValue - b));
+                return (Math.Clamp(fraction, 0, 1), $"{c} kg \u2192 {goal.TargetValue} kg");
+            }
+        }
+
+        var daysLeft = goal.TargetDate.ToDateTime(TimeOnly.MinValue).Date.Subtract(DateTime.Today).Days;
+        return (null, daysLeft >= 0 ? $"Target: {goal.TargetValue} by {goal.TargetDate:d} ({daysLeft} day(s) left)" : "Target date passed");
+    }
+
+    private void GoToActiveWorkout(Guid planId) => Navigation.NavigateTo($"/active-workout/{planId}");
+}
+
 }
