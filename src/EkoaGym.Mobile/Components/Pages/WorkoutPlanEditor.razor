@@ -1,0 +1,316 @@
+@page "/plans/new"
+@page "/plans/{Id:guid}/edit"
+@inject ApiClient Api
+@inject ISyncService SyncService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h1 class="mb-4 text-xl font-semibold">@(isEditMode ? "Edit Plan" : "New Plan")</h1>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <div class="mb-4">
+        <label class="label" for="plan-name">Plan name</label>
+        <input id="plan-name" class="input" @bind="name" @bind:event="oninput" />
+    </div>
+
+    <h2 class="mb-2 font-medium">Exercises</h2>
+
+    @if (rows.Count == 0)
+    {
+        <EmptyState Icon="🏋️" Title="No exercises added yet" />
+    }
+    else
+    {
+        <div class="mb-4 flex flex-col gap-3">
+            @for (var i = 0; i < rows.Count; i++)
+            {
+                var index = i;
+                var row = rows[index];
+                <div class="card flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <p class="font-medium">@row.ExerciseName</p>
+                        <div class="flex gap-1">
+                            <button type="button" class="btn-outline" disabled="@(index == 0)" @onclick="() => MoveUp(index)">↑</button>
+                            <button type="button" class="btn-outline" disabled="@(index == rows.Count - 1)" @onclick="() => MoveDown(index)">↓</button>
+                            <button type="button" class="btn-danger" @onclick="() => RemoveRowAsync(index)">Remove</button>
+                        </div>
+                    </div>
+
+                    @if (row.SuggestedReps is not null || row.SuggestedWeightKg is not null)
+                    {
+                        <p class="text-sm text-info">
+                            Suggested: @row.SuggestedWeightKg kg × @row.SuggestedReps reps
+                            <button type="button" class="ml-2 underline" @onclick="() => ApplySuggestion(row)">Use</button>
+                        </p>
+                    }
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="label">Sets</label>
+                            <InputNumber class="input" @bind-Value="row.Sets" />
+                        </div>
+                        <div>
+                            <label class="label">Reps</label>
+                            <InputNumber class="input" @bind-Value="row.Reps" />
+                        </div>
+                        <div>
+                            <label class="label">Weight (kg)</label>
+                            <InputNumber class="input" @bind-Value="row.WeightKg" />
+                        </div>
+                        <div>
+                            <label class="label">Rest (sec)</label>
+                            <InputNumber class="input" @bind-Value="row.RestSeconds" />
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="card mb-4 flex flex-col gap-2">
+        <p class="font-medium">Add an exercise</p>
+        <input class="input" placeholder="Search exercise library..." value="@exerciseSearch" @oninput="OnExerciseSearchChanged" />
+
+        @if (filteredExercises.Count > 0)
+        {
+            <div class="flex flex-col gap-1">
+                @foreach (var exercise in filteredExercises)
+                {
+                    <button type="button" class="btn-outline flex justify-between" @onclick="() => AddExerciseAsync(exercise)">
+                        <span>@exercise.Name</span>
+                        <span class="text-xs text-text-secondary">@exercise.MuscleGroup</span>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    <ErrorBanner Message="@errorMessage" />
+
+    @if (isSaving)
+    {
+        <LoadingIndicator Message="Saving..." />
+    }
+    else
+    {
+        <div class="flex gap-3">
+            <button type="button" class="btn-outline flex-1" @onclick='() => Navigation.NavigateTo("/my-workout")'>Cancel</button>
+            <button type="button" class="btn-primary flex-1" @onclick="SaveAsync">Save</button>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private bool isEditMode => Id != Guid.Empty;
+    private bool isLoading = true;
+    private bool isSaving;
+    private string? errorMessage;
+    private string name = string.Empty;
+    private readonly List<ExerciseRow> rows = [];
+
+    private string exerciseSearch = string.Empty;
+    private List<ExerciseSummary> allExercises = [];
+    private List<ExerciseSummary> filteredExercises = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        try
+        {
+            allExercises = (await SyncService.GetExercisesAsync()).ToList();
+
+            if (isEditMode)
+            {
+                var plan = await Api.GetAsync<PlanDetail>($"api/plans/{Id}");
+                if (plan is not null)
+                {
+                    name = plan.Name;
+                    rows.AddRange(plan.Exercises
+                        .OrderBy(e => e.OrderIndex)
+                        .Select(e => new ExerciseRow
+                        {
+                            ExerciseId = e.ExerciseId,
+                            ExerciseName = e.ExerciseName,
+                            Sets = e.Sets,
+                            Reps = e.Reps,
+                            WeightKg = e.WeightKg,
+                            RestSeconds = e.RestSeconds,
+                        }));
+
+                    // Request suggested targets for every exercise already in the plan — shown as a hint,
+                    // never applied automatically over the already-configured Sets/Reps/Weight above.
+                    foreach (var row in rows)
+                    {
+                        _ = LoadSuggestionAsync(row);
+                    }
+                }
+            }
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadSuggestionAsync(ExerciseRow row)
+    {
+        try
+        {
+            var target = await Api.GetAsync<NextTarget>($"api/plans/{Id}/exercises/{row.ExerciseId}/next-target");
+            if (target is not null)
+            {
+                row.SuggestedReps = target.Reps;
+                row.SuggestedWeightKg = target.WeightKg;
+                StateHasChanged();
+            }
+        }
+        catch (ApiException)
+        {
+            // No history yet for this exercise/plan — simply show no suggestion.
+        }
+    }
+
+    private void ApplySuggestion(ExerciseRow row)
+    {
+        if (row.SuggestedReps is int reps)
+        {
+            row.Reps = reps;
+        }
+
+        if (row.SuggestedWeightKg is decimal weight)
+        {
+            row.WeightKg = weight;
+        }
+    }
+
+    private void OnExerciseSearchChanged(ChangeEventArgs e)
+    {
+        exerciseSearch = e.Value?.ToString() ?? string.Empty;
+        filteredExercises = string.IsNullOrWhiteSpace(exerciseSearch)
+            ? []
+            : allExercises
+                .Where(x => x.Name.Contains(exerciseSearch, StringComparison.OrdinalIgnoreCase))
+                .Take(10)
+                .ToList();
+    }
+
+    private async Task AddExerciseAsync(ExerciseSummary exercise)
+    {
+        var row = new ExerciseRow
+        {
+            ExerciseId = exercise.Id,
+            ExerciseName = exercise.Name,
+            Sets = 3,
+            Reps = 10,
+            WeightKg = 0,
+            RestSeconds = 60,
+        };
+        rows.Add(row);
+        exerciseSearch = string.Empty;
+        filteredExercises = [];
+
+        if (isEditMode)
+        {
+            await LoadSuggestionAsync(row);
+            if (row.SuggestedReps is not null)
+            {
+                ApplySuggestion(row);
+            }
+        }
+    }
+
+    private async Task RemoveRowAsync(int index)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Remove this exercise from the plan?");
+        if (confirmed)
+        {
+            rows.RemoveAt(index);
+        }
+    }
+
+    private void MoveUp(int index)
+    {
+        if (index <= 0)
+        {
+            return;
+        }
+
+        (rows[index - 1], rows[index]) = (rows[index], rows[index - 1]);
+    }
+
+    private void MoveDown(int index)
+    {
+        if (index >= rows.Count - 1)
+        {
+            return;
+        }
+
+        (rows[index + 1], rows[index]) = (rows[index], rows[index + 1]);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            errorMessage = "Enter a plan name.";
+            return;
+        }
+
+        if (rows.Count == 0)
+        {
+            errorMessage = "Add at least one exercise.";
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+        try
+        {
+            var exercises = rows
+                .Select(r => new PlanExerciseRequest(r.ExerciseId, r.Sets, r.Reps, r.WeightKg, r.RestSeconds))
+                .ToList();
+
+            if (isEditMode)
+            {
+                await Api.PutAsync($"api/plans/{Id}", new UpdatePlanRequest(name.Trim(), exercises));
+            }
+            else
+            {
+                await Api.PostAsync("api/plans", new CreatePlanRequest(name.Trim(), exercises));
+            }
+
+            Navigation.NavigateTo("/my-workout");
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private class ExerciseRow
+    {
+        public Guid ExerciseId { get; set; }
+        public string ExerciseName { get; set; } = string.Empty;
+        public int Sets { get; set; }
+        public int Reps { get; set; }
+        public decimal WeightKg { get; set; }
+        public int RestSeconds { get; set; }
+        public int? SuggestedReps { get; set; }
+        public decimal? SuggestedWeightKg { get; set; }
+    }
+}

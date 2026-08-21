@@ -1,0 +1,20 @@
+@* Reusable plan summary card used by MyWorkout.razor. *@
+<div class="card flex flex-col gap-3">
+    <div>
+        <p class="font-medium">@Plan.Name</p>
+        <p class="text-sm text-text-secondary">@Plan.ExerciseCount exercise(s)</p>
+    </div>
+
+    <div class="flex gap-2">
+        <button type="button" class="btn-outline flex-1" @onclick="() => OnEdit.InvokeAsync(Plan.Id)">Edit</button>
+        <button type="button" class="btn-outline flex-1" @onclick="() => OnDuplicate.InvokeAsync(Plan.Id)">Duplicate</button>
+        <button type="button" class="btn-danger flex-1" @onclick="() => OnDelete.InvokeAsync(Plan.Id)">Delete</button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public PlanSummary Plan { get; set; } = null!;
+    [Parameter] public EventCallback<Guid> OnEdit { get; set; }
+    [Parameter] public EventCallback<Guid> OnDuplicate { get; set; }
+    [Parameter] public EventCallback<Guid> OnDelete { get; set; }
+}

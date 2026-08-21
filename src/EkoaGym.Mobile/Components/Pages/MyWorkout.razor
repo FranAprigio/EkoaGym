@@ -1,36 +1,99 @@
 @page "/my-workout"
 @inject ISyncService SyncService
+@inject ApiClient Api
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
 
-<h1 class="mb-4 text-xl font-semibold">My Workout</h1>
+<div class="mb-4 flex items-center justify-between">
+    <h1 class="text-xl font-semibold">My Workout</h1>
+    <button type="button" class="btn-primary" @onclick='() => Navigation.NavigateTo("/plans/new")'>+ New Plan</button>
+</div>
 
 @if (isLoading)
 {
     <LoadingIndicator />
 }
-else if (plans.Count == 0)
-{
-    <EmptyState Icon="🏋️" Title="No workout plans yet" Description="Create a plan to get started." />
-}
 else
 {
-    <div class="flex flex-col gap-3">
-        @foreach (var plan in plans)
-        {
-            <div class="card">
-                <p class="font-medium">@plan.Name</p>
-                <p class="text-sm text-text-secondary">@plan.ExerciseCount exercises</p>
-            </div>
-        }
-    </div>
+    <ErrorBanner Message="@errorMessage" OnRetry="LoadAsync" />
+
+    @if (plans.Count == 0 && errorMessage is null)
+    {
+        <EmptyState Icon="🏋️" Title="No workout plans yet" Description="Create a plan to get started." />
+    }
+    else
+    {
+        <div class="flex flex-col gap-3">
+            @foreach (var plan in plans)
+            {
+                <PlanCard Plan="plan" OnEdit="EditPlanAsync" OnDuplicate="DuplicatePlanAsync" OnDelete="DeletePlanAsync" />
+            }
+        </div>
+    }
 }
 
 @code {
     private bool isLoading = true;
-    private IReadOnlyList<PlanSummary> plans = [];
+    private string? errorMessage;
+    private List<PlanSummary> plans = [];
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
     {
-        plans = await SyncService.GetPlansAsync();
-        isLoading = false;
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            plans = (await SyncService.GetPlansAsync()).ToList();
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private Task EditPlanAsync(Guid id)
+    {
+        Navigation.NavigateTo($"/plans/{id}/edit");
+        return Task.CompletedTask;
+    }
+
+    private async Task DuplicatePlanAsync(Guid id)
+    {
+        errorMessage = null;
+        try
+        {
+            await Api.PostAsync($"api/plans/{id}/duplicate");
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task DeletePlanAsync(Guid id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Delete this plan? This can't be undone.");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        errorMessage = null;
+        try
+        {
+            await Api.DeleteAsync($"api/plans/{id}");
+            await LoadAsync();
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
     }
 }
