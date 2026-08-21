@@ -18,9 +18,11 @@
 
     <div>
         <label class="label" for="password">Password</label>
-        <InputText id="password" type="password" class="input" @bind-Value="model.Password" />
+        <PasswordInput Id="password" @bind-Value="model.Password" />
         <ValidationMessage For="() => model.Password" class="form-error" />
     </div>
+
+    <a href="/forgot-password" class="text-right text-sm text-text-secondary underline">Forgot password?</a>
 
     <ErrorBanner Message="@errorMessage" />
 

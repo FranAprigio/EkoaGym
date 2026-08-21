@@ -24,8 +24,14 @@
 
     <div>
         <label class="label" for="password">Password</label>
-        <InputText id="password" type="password" class="input" @bind-Value="model.Password" />
+        <PasswordInput Id="password" @bind-Value="model.Password" />
         <ValidationMessage For="() => model.Password" class="form-error" />
+    </div>
+
+    <div>
+        <label class="label" for="confirm-password">Confirm password</label>
+        <PasswordInput Id="confirm-password" @bind-Value="model.ConfirmPassword" />
+        <ValidationMessage For="() => model.ConfirmPassword" class="form-error" />
     </div>
 
     <ErrorBanner Message="@errorMessage" />
@@ -84,5 +90,8 @@
 
         [System.ComponentModel.DataAnnotations.Required]
         public string Password { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 }

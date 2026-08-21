@@ -14,8 +14,11 @@ public class AuthService(
     EkoaGymDbContext dbContext,
     IPasswordHasher<User> passwordHasher,
     IJwtTokenGenerator jwtTokenGenerator,
+    IEmailSender emailSender,
     IOptions<JwtOptions> jwtOptions) : IAuthService
 {
+    private static readonly TimeSpan ResetTokenLifetime = TimeSpan.FromHours(1);
+
     private readonly JwtOptions _jwtOptions = jwtOptions.Value;
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
@@ -80,6 +83,60 @@ public class AuthService(
         existingToken.IsRevoked = true;
 
         return await IssueTokensAsync(existingToken.User, cancellationToken);
+    }
+
+    public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
+        var user = await dbContext.Users.SingleOrDefaultAsync(u => u.Email == normalizedEmail && !u.IsDeleted, cancellationToken);
+        if (user is null)
+        {
+            // Never reveal whether the email is registered — caller always sees the same generic outcome.
+            return;
+        }
+
+        var resetToken = GenerateRefreshToken();
+        dbContext.PasswordResetTokens.Add(new PasswordResetToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            TokenHash = HashToken(resetToken),
+            ExpiresAt = DateTime.UtcNow.Add(ResetTokenLifetime),
+            CreatedAt = DateTime.UtcNow
+        });
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        await emailSender.SendPasswordResetEmailAsync(user.Email, resetToken, cancellationToken);
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var tokenHash = HashToken(request.Token);
+
+        var resetToken = await dbContext.PasswordResetTokens
+            .Include(t => t.User)
+            .SingleOrDefaultAsync(t => t.TokenHash == tokenHash, cancellationToken);
+
+        if (resetToken is null || resetToken.IsUsed || resetToken.ExpiresAt < DateTime.UtcNow)
+        {
+            throw new InvalidPasswordResetTokenException();
+        }
+
+        resetToken.IsUsed = true;
+        resetToken.User.PasswordHash = passwordHasher.HashPassword(resetToken.User, request.NewPassword);
+        resetToken.User.UpdatedAt = DateTime.UtcNow;
+
+        // Force re-login everywhere: revoke all outstanding refresh tokens for this user.
+        var activeRefreshTokens = await dbContext.RefreshTokens
+            .Where(rt => rt.UserId == resetToken.UserId && !rt.IsRevoked)
+            .ToListAsync(cancellationToken);
+        foreach (var refreshToken in activeRefreshTokens)
+        {
+            refreshToken.IsRevoked = true;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<AuthResponse> IssueTokensAsync(User user, CancellationToken cancellationToken)

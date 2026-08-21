@@ -56,7 +56,7 @@ namespace EkoaGym.Infrastructure.Migrations
 
                     b.HasIndex("UserId", "Date");
 
-                    b.ToTable("BodyMetricLogs", (string)null);
+                    b.ToTable("BodyMetricLogs");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.Exercise", b =>
@@ -108,7 +108,7 @@ namespace EkoaGym.Infrastructure.Migrations
 
                     b.HasIndex("Name");
 
-                    b.ToTable("Exercises", (string)null);
+                    b.ToTable("Exercises");
 
                     b.HasData(
                         new
@@ -650,7 +650,39 @@ namespace EkoaGym.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Goals", (string)null);
+                    b.ToTable("Goals");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetTokens");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.ProgressPhoto", b =>
@@ -681,7 +713,7 @@ namespace EkoaGym.Infrastructure.Migrations
 
                     b.HasIndex("UserId", "Date");
 
-                    b.ToTable("ProgressPhotos", (string)null);
+                    b.ToTable("ProgressPhotos");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.RefreshToken", b =>
@@ -713,7 +745,7 @@ namespace EkoaGym.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.SessionSetLog", b =>
@@ -746,7 +778,7 @@ namespace EkoaGym.Infrastructure.Migrations
 
                     b.HasIndex("SessionId", "ExerciseId");
 
-                    b.ToTable("SessionSetLogs", (string)null);
+                    b.ToTable("SessionSetLogs");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.User", b =>
@@ -783,7 +815,7 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.UserProfile", b =>
@@ -830,7 +862,7 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UserProfiles", (string)null);
+                    b.ToTable("UserProfiles");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.WorkoutPlan", b =>
@@ -860,7 +892,7 @@ namespace EkoaGym.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("WorkoutPlans", (string)null);
+                    b.ToTable("WorkoutPlans");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.WorkoutPlanExercise", b =>
@@ -896,7 +928,7 @@ namespace EkoaGym.Infrastructure.Migrations
 
                     b.HasIndex("PlanId");
 
-                    b.ToTable("WorkoutPlanExercises", (string)null);
+                    b.ToTable("WorkoutPlanExercises");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.WorkoutSession", b =>
@@ -929,7 +961,7 @@ namespace EkoaGym.Infrastructure.Migrations
 
                     b.HasIndex("UserId", "StartedAt");
 
-                    b.ToTable("WorkoutSessions", (string)null);
+                    b.ToTable("WorkoutSessions");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.BodyMetricLog", b =>
@@ -944,6 +976,17 @@ namespace EkoaGym.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.Goal", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.PasswordResetToken", b =>
                 {
                     b.HasOne("EkoaGym.Domain.Entities.User", "User")
                         .WithMany()

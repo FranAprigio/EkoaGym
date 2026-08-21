@@ -9,6 +9,7 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<Goal> Goals => Set<Goal>();
     public DbSet<Exercise> Exercises => Set<Exercise>();
@@ -48,6 +49,17 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
             entity.HasOne(rt => rt.User)
                 .WithMany()
                 .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PasswordResetToken>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.TokenHash).IsRequired();
+            entity.HasIndex(t => t.TokenHash).IsUnique();
+            entity.HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
