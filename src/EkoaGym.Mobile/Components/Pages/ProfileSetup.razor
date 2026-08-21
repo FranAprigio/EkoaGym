@@ -1,0 +1,183 @@
+@page "/profile-setup"
+@inject ApiClient Api
+@inject NavigationManager Navigation
+
+<h1 class="mb-2 text-center text-xl font-semibold">Set up your profile</h1>
+<p class="mb-6 text-center text-sm text-text-secondary">Step @currentStep of 2</p>
+
+@if (currentStep == 1)
+{
+    <EditForm Model="profileModel" OnValidSubmit="() => currentStep = 2" class="flex flex-col gap-4">
+        <DataAnnotationsValidator />
+
+        <div>
+            <label class="label" for="name">Name</label>
+            <InputText id="name" class="input" @bind-Value="profileModel.Name" />
+            <ValidationMessage For="() => profileModel.Name" class="form-error" />
+        </div>
+
+        <div>
+            <label class="label" for="dob">Date of birth</label>
+            <InputDate id="dob" class="input" @bind-Value="profileModel.DateOfBirth" />
+            <ValidationMessage For="() => profileModel.DateOfBirth" class="form-error" />
+        </div>
+
+        <div>
+            <label class="label" for="sex">Sex</label>
+            <InputSelect id="sex" class="input" @bind-Value="profileModel.Sex">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+                <option value="PreferNotToSay">Prefer not to say</option>
+            </InputSelect>
+        </div>
+
+        <div>
+            <label class="label" for="height">Height (cm)</label>
+            <InputNumber id="height" class="input" @bind-Value="profileModel.HeightCm" />
+            <ValidationMessage For="() => profileModel.HeightCm" class="form-error" />
+        </div>
+
+        <div>
+            <label class="label" for="weight">Current weight (kg)</label>
+            <InputNumber id="weight" class="input" @bind-Value="profileModel.CurrentWeightKg" />
+            <ValidationMessage For="() => profileModel.CurrentWeightKg" class="form-error" />
+        </div>
+
+        <div>
+            <label class="label" for="activity">Activity level</label>
+            <InputSelect id="activity" class="input" @bind-Value="profileModel.ActivityLevel">
+                <option value="Sedentary">Sedentary</option>
+                <option value="LightlyActive">Lightly active</option>
+                <option value="ModeratelyActive">Moderately active</option>
+                <option value="VeryActive">Very active</option>
+                <option value="ExtraActive">Extra active</option>
+            </InputSelect>
+        </div>
+
+        <button type="submit" class="btn-primary">Next</button>
+    </EditForm>
+}
+else
+{
+    <EditForm Model="goalModel" OnValidSubmit="HandleFinishAsync" class="flex flex-col gap-4">
+        <DataAnnotationsValidator />
+
+        <div>
+            <label class="label" for="goal-type">Goal</label>
+            <InputSelect id="goal-type" class="input" @bind-Value="goalModel.Type">
+                <option value="@GoalTypes.WeightLoss">Weight loss</option>
+                <option value="@GoalTypes.WeightGain">Weight gain</option>
+                <option value="@GoalTypes.MuscleGain">Muscle gain</option>
+                <option value="@GoalTypes.Endurance">Endurance</option>
+                <option value="@GoalTypes.Custom">Custom</option>
+            </InputSelect>
+        </div>
+
+        @if (goalModel.Type == GoalTypes.Custom)
+        {
+            <div>
+                <label class="label" for="custom-goal">Describe your goal</label>
+                <InputText id="custom-goal" class="input" @bind-Value="goalModel.CustomType" />
+                <ValidationMessage For="() => goalModel.CustomType" class="form-error" />
+            </div>
+        }
+
+        <div>
+            <label class="label" for="target-value">Target value</label>
+            <InputNumber id="target-value" class="input" @bind-Value="goalModel.TargetValue" />
+            <ValidationMessage For="() => goalModel.TargetValue" class="form-error" />
+        </div>
+
+        <div>
+            <label class="label" for="target-date">Target date</label>
+            <InputDate id="target-date" class="input" @bind-Value="goalModel.TargetDate" />
+            <ValidationMessage For="() => goalModel.TargetDate" class="form-error" />
+        </div>
+
+        <ErrorBanner Message="@errorMessage" />
+
+        @if (isSubmitting)
+        {
+            <LoadingIndicator Message="Saving..." />
+        }
+        else
+        {
+            <div class="flex gap-3">
+                <button type="button" class="btn-outline flex-1" @onclick="() => currentStep = 1">Back</button>
+                <button type="submit" class="btn-primary flex-1">Finish</button>
+            </div>
+        }
+    </EditForm>
+}
+
+@code {
+    private int currentStep = 1;
+    private readonly ProfileSetupModel profileModel = new();
+    private readonly GoalModel goalModel = new();
+    private string? errorMessage;
+    private bool isSubmitting;
+
+    private async Task HandleFinishAsync()
+    {
+        if (goalModel.Type == GoalTypes.Custom && string.IsNullOrWhiteSpace(goalModel.CustomType))
+        {
+            errorMessage = "Please describe your custom goal.";
+            return;
+        }
+
+        isSubmitting = true;
+        errorMessage = null;
+        try
+        {
+            await Api.PutAsync("api/profile", new ProfileSetupRequest(
+                profileModel.Name, profileModel.DateOfBirth, profileModel.Sex, profileModel.HeightCm,
+                profileModel.CurrentWeightKg, profileModel.ActivityLevel));
+
+            var goalType = goalModel.Type == GoalTypes.Custom ? goalModel.CustomType.Trim() : goalModel.Type;
+            await Api.PostAsync("api/goals", new CreateGoalRequest(goalType, goalModel.TargetValue, goalModel.TargetDate));
+
+            Navigation.NavigateTo("/");
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private class ProfileSetupModel
+    {
+        [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(200, MinimumLength = 1)]
+        public string Name { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public DateOnly DateOfBirth { get; set; } = DateOnly.FromDateTime(DateTime.Today).AddYears(-25);
+
+        public string Sex { get; set; } = "PreferNotToSay";
+
+        [System.ComponentModel.DataAnnotations.Range(50, 300)]
+        public int HeightCm { get; set; } = 170;
+
+        [System.ComponentModel.DataAnnotations.Range(20, 400)]
+        public decimal CurrentWeightKg { get; set; } = 70;
+
+        public string ActivityLevel { get; set; } = "ModeratelyActive";
+    }
+
+    private class GoalModel
+    {
+        public string Type { get; set; } = GoalTypes.WeightLoss;
+
+        public string CustomType { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Range(0.01, double.MaxValue)]
+        public decimal TargetValue { get; set; } = 1;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public DateOnly TargetDate { get; set; } = DateOnly.FromDateTime(DateTime.Today.AddMonths(3));
+    }
+}

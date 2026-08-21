@@ -60,9 +60,9 @@
                 return;
             }
 
-            await TokenStore.SaveTokensAsync(response.AccessToken, response.RefreshToken);
+            await TokenStore.SaveTokensAsync(response.AccessToken, response.RefreshToken, response.AccessTokenExpiresAt);
             AuthState.SignIn();
-            Navigation.NavigateTo("/");
+            Navigation.NavigateTo("/profile-setup");
         }
         catch (ApiException ex)
         {

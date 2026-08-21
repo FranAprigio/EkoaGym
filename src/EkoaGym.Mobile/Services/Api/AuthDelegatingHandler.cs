@@ -67,7 +67,7 @@ public class AuthDelegatingHandler(
                 return null;
             }
 
-            await tokenStore.SaveTokensAsync(auth.AccessToken, auth.RefreshToken);
+            await tokenStore.SaveTokensAsync(auth.AccessToken, auth.RefreshToken, auth.AccessTokenExpiresAt);
             return auth.AccessToken;
         }
         catch

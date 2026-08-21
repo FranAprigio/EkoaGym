@@ -68,15 +68,32 @@ public class ApiClient(HttpClient httpClient)
         string? code = null;
         try
         {
-            var error = await response.Content.ReadFromJsonAsync<ApiErrorResponse>(JsonOptions);
-            friendlyMessage = error?.Message;
-            code = error?.Code;
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var document = await JsonDocument.ParseAsync(stream);
+            var root = document.RootElement;
+
+            // Custom Application exceptions use {code, message} (see GlobalExceptionHandler).
+            if (root.TryGetProperty("message", out var messageProp) && messageProp.ValueKind == JsonValueKind.String)
+            {
+                friendlyMessage = messageProp.GetString();
+                code = root.TryGetProperty("code", out var codeProp) ? codeProp.GetString() : null;
+            }
+            // [ApiController] automatic model validation uses ValidationProblemDetails: {errors: {field: [msg,...]}}.
+            else if (root.TryGetProperty("errors", out var errorsProp) && errorsProp.ValueKind == JsonValueKind.Object)
+            {
+                var messages = errorsProp.EnumerateObject()
+                    .SelectMany(field => field.Value.EnumerateArray().Select(m => m.GetString()))
+                    .Where(m => !string.IsNullOrWhiteSpace(m));
+                friendlyMessage = string.Join(" ", messages);
+                code = "validation_error";
+            }
         }
         catch
         {
-            // Response body wasn't the expected {code,message} shape — fall back to a generic message below.
+            // Response body wasn't valid JSON at all — fall back to a generic message below.
         }
 
+        friendlyMessage = string.IsNullOrWhiteSpace(friendlyMessage) ? null : friendlyMessage;
         friendlyMessage ??= response.StatusCode switch
         {
             HttpStatusCode.Unauthorized => "Your session has expired. Please log in again.",
@@ -90,6 +107,4 @@ public class ApiClient(HttpClient httpClient)
         response.Dispose();
         throw new ApiException(friendlyMessage, (int)response.StatusCode, code);
     }
-
-    private record ApiErrorResponse(string Code, string Message);
 }

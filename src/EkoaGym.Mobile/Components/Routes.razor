@@ -1,6 +1,15 @@
 ﻿<Router AppAssembly="typeof(MauiProgram).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        <ErrorBoundary>
+            <ChildContent>
+                <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+                <FocusOnNavigate RouteData="routeData" Selector="h1" />
+            </ChildContent>
+            <ErrorContent>
+                <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+                    <p class="error-banner">Something went wrong. Please restart the app.</p>
+                </div>
+            </ErrorContent>
+        </ErrorBoundary>
     </Found>
 </Router>
