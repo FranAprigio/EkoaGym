@@ -2,6 +2,7 @@
 @inject ApiClient Api
 @inject ITokenStore TokenStore
 @inject AuthState AuthState
+@inject IBiometricLoginService BiometricLoginService
 @inject NavigationManager Navigation
 
 <h1 class="mb-4 text-xl font-semibold">Profile</h1>
@@ -142,6 +143,18 @@ else
         }
     </EditForm>
 
+    @if (biometricAvailable)
+    {
+        <h2 class="mb-2 mt-2 font-medium">Security</h2>
+        <div class="card mb-4 flex items-center justify-between">
+            <div>
+                <p class="font-medium">Biometric login</p>
+                <p class="text-sm text-text-secondary">Use fingerprint/Face ID instead of your password.</p>
+            </div>
+            <input type="checkbox" checked="@biometricEnabled" @onchange="ToggleBiometricAsync" />
+        </div>
+    }
+
     <button type="button" class="btn-outline" @onclick="LogoutAsync">Log out</button>
 }
 
@@ -150,13 +163,20 @@ else
     private bool isEditing;
     private bool isSaving;
     private bool isAddingGoal;
+    private bool biometricAvailable;
+    private bool biometricEnabled;
     private string? errorMessage;
     private ProfileSummary? profile;
     private List<GoalSummary> goals = [];
     private readonly EditProfileModel editModel = new();
     private readonly NewGoalModel newGoal = new();
 
-    protected override Task OnInitializedAsync() => LoadAllAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        biometricAvailable = await BiometricLoginService.IsAvailableAsync();
+        biometricEnabled = await BiometricLoginService.IsEnabledAsync();
+        await LoadAllAsync();
+    }
 
     private async Task LoadAllAsync()
     {
@@ -267,6 +287,24 @@ else
         {
             errorMessage = ex.Message;
         }
+    }
+
+    private async Task ToggleBiometricAsync(ChangeEventArgs e)
+    {
+        var enable = e.Value is bool value && value;
+        if (enable)
+        {
+            await BiometricLoginService.EnableAsync();
+            biometricEnabled = true;
+            return;
+        }
+
+        await BiometricLoginService.DisableAsync();
+        biometricEnabled = false;
+
+        // DisableAsync already cleared the stored refresh token — require a fresh password login now.
+        AuthState.SignOut();
+        Navigation.NavigateTo("/login");
     }
 
     private async Task LogoutAsync()

@@ -73,6 +73,7 @@
         <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
         <PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
         <PackageReference Include="Plugin.LocalNotification" Version="14.1.1" />
+        <PackageReference Include="Oscore.Maui.Biometric" Version="2.5.1" />
     </ItemGroup>
 
     <!-- Rebuilds wwwroot/css/app.css from Styles/app.tailwind.css. Requires Node/npm; skips quietly if missing

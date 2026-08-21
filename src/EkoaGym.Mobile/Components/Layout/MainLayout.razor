@@ -2,6 +2,7 @@
 @inject ISyncService SyncService
 @inject ITokenStore TokenStore
 @inject AuthState AuthState
+@inject IBiometricLoginService BiometricLoginService
 @inject NavigationManager Navigation
 @implements IDisposable
 
@@ -35,17 +36,33 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // AuthState is a fresh in-memory singleton on every app launch — re-derive it from whatever
-        // token SecureStorage still has before this authenticated shell is allowed to render @Body,
-        // so no protected page ever mounts without a stored token (persistent login / M-1.3).
-        var accessToken = await TokenStore.GetAccessTokenAsync();
-        if (string.IsNullOrEmpty(accessToken))
+        // AuthState.IsAuthenticated is only ever true here if Login already signed the user in during
+        // THIS app process (password or biometric) — a cold launch always starts with it false, which
+        // is what lets the biometric gate below re-run on every fresh launch without looping back on
+        // itself after Login navigates to "/".
+        if (!AuthState.IsAuthenticated)
         {
-            Navigation.NavigateTo("/login");
-            return;
+            if (await BiometricLoginService.IsEnabledAsync())
+            {
+                // Biometric login is opted in: never silently reuse the stored token on a cold launch —
+                // send the user through Login so they must unlock it with a fingerprint/Face ID check first.
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            // AuthState is a fresh in-memory singleton on every app launch — re-derive it from whatever
+            // token SecureStorage still has before this authenticated shell is allowed to render @Body,
+            // so no protected page ever mounts without a stored token (persistent login / M-1.3).
+            var accessToken = await TokenStore.GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            AuthState.SignIn();
         }
 
-        AuthState.SignIn();
         isAuthorized = true;
 
         // Refresh cached plans/exercises/last session now that the shell is authorized. If the

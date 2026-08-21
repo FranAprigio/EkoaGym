@@ -3,9 +3,18 @@
 @inject ApiClient Api
 @inject ITokenStore TokenStore
 @inject AuthState AuthState
+@inject IBiometricLoginService BiometricLoginService
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 <h1 class="mb-6 text-center text-xl font-semibold">Log in</h1>
+
+@if (showBiometricButton)
+{
+    <button type="button" class="btn-outline mb-4 w-full" disabled="@isBiometricChecking" @onclick="HandleBiometricLoginAsync">
+        @(isBiometricChecking ? "Checking..." : "Log in with fingerprint / Face ID")
+    </button>
+}
 
 <EditForm Model="model" OnValidSubmit="HandleLoginAsync" class="flex flex-col gap-4">
     <DataAnnotationsValidator />
@@ -42,6 +51,42 @@
     private readonly LoginModel model = new();
     private string? errorMessage;
     private bool isSubmitting;
+    private bool showBiometricButton;
+    private bool isBiometricChecking;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Gracefully falls back to the plain password form whenever biometrics aren't enabled/available.
+        showBiometricButton = await BiometricLoginService.IsEnabledAsync() && await BiometricLoginService.IsAvailableAsync();
+    }
+
+    private async Task HandleBiometricLoginAsync()
+    {
+        isBiometricChecking = true;
+        errorMessage = null;
+        try
+        {
+            var outcome = await BiometricLoginService.TryUnlockAsync();
+            if (outcome == BiometricUnlockOutcome.Success)
+            {
+                // The refresh token was never removed — MainLayout re-derives AuthState from it exactly
+                // like the M-1.3 auto-login path, this just adds the biometric check in front of it.
+                AuthState.SignIn();
+                Navigation.NavigateTo("/");
+                return;
+            }
+
+            if (outcome != BiometricUnlockOutcome.Cancelled)
+            {
+                errorMessage = "Biometric login isn't available right now. Please log in with your password.";
+                showBiometricButton = false;
+            }
+        }
+        finally
+        {
+            isBiometricChecking = false;
+        }
+    }
 
     private async Task HandleLoginAsync()
     {
@@ -58,6 +103,7 @@
 
             await TokenStore.SaveTokensAsync(response.AccessToken, response.RefreshToken, response.AccessTokenExpiresAt);
             AuthState.SignIn();
+            await MaybePromptEnableBiometricAsync();
             Navigation.NavigateTo("/");
         }
         catch (ApiException ex)
@@ -67,6 +113,24 @@
         finally
         {
             isSubmitting = false;
+        }
+    }
+
+    private async Task MaybePromptEnableBiometricAsync()
+    {
+        if (!await BiometricLoginService.ShouldPromptToEnableAsync())
+        {
+            return;
+        }
+
+        var accepted = await JS.InvokeAsync<bool>("confirm", "Enable fingerprint/Face ID login so you don't have to type your password next time?");
+        if (accepted)
+        {
+            await BiometricLoginService.EnableAsync();
+        }
+        else
+        {
+            await BiometricLoginService.MarkPromptDismissedAsync();
         }
     }
 

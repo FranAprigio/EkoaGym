@@ -32,5 +32,7 @@
     <string>EkoaGym uses the camera to take progress photos.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>EkoaGym uses your photo library to select progress photos.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>EkoaGym uses Face ID to let you log in without typing your password.</string>
 </dict>
 </plist>

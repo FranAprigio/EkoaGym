@@ -3,6 +3,7 @@ using EkoaGym.Mobile.Services.Auth;
 using EkoaGym.Mobile.Services.Connectivity;
 using EkoaGym.Mobile.Services.Data;
 using EkoaGym.Mobile.Services.Notifications;
+using Maui.Biometric;
 using Microsoft.Extensions.Logging;
 using Plugin.LocalNotification;
 
@@ -16,6 +17,7 @@ public static class MauiProgram
 		builder
 			.UseMauiApp<App>()
 			.UseLocalNotification()
+			.UseBiometricAuthentication()
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -26,6 +28,7 @@ public static class MauiProgram
 		// Auth / token storage
 		builder.Services.AddSingleton<ITokenStore, SecureStorageTokenStore>();
 		builder.Services.AddSingleton<AuthState>();
+		builder.Services.AddSingleton<IBiometricLoginService, BiometricLoginService>();
 		builder.Services.AddTransient<AuthDelegatingHandler>();
 
 		// Connectivity + offline cache
