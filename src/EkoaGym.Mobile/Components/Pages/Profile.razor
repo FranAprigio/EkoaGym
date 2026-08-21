@@ -12,14 +12,77 @@
 }
 else
 {
-    <ErrorBanner Message="@errorMessage" OnRetry="LoadProfileAsync" />
+    <ErrorBanner Message="@errorMessage" OnRetry="LoadAllAsync" />
 
-    @if (profile is not null)
+    @if (isEditing)
+    {
+        <EditForm Model="editModel" OnValidSubmit="SaveProfileAsync" class="card mb-4 flex flex-col gap-4">
+            <DataAnnotationsValidator />
+
+            <div>
+                <label class="label" for="edit-name">Name</label>
+                <InputText id="edit-name" class="input" @bind-Value="editModel.Name" />
+                <ValidationMessage For="() => editModel.Name" class="form-error" />
+            </div>
+
+            <div>
+                <label class="label" for="edit-dob">Date of birth</label>
+                <InputDate id="edit-dob" class="input" @bind-Value="editModel.DateOfBirth" />
+            </div>
+
+            <div>
+                <label class="label" for="edit-sex">Sex</label>
+                <InputSelect id="edit-sex" class="input" @bind-Value="editModel.Sex">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                    <option value="PreferNotToSay">Prefer not to say</option>
+                </InputSelect>
+            </div>
+
+            <div>
+                <label class="label" for="edit-height">Height (cm)</label>
+                <InputNumber id="edit-height" class="input" @bind-Value="editModel.HeightCm" />
+                <ValidationMessage For="() => editModel.HeightCm" class="form-error" />
+            </div>
+
+            <div>
+                <label class="label" for="edit-weight">Current weight (kg)</label>
+                <InputNumber id="edit-weight" class="input" @bind-Value="editModel.CurrentWeightKg" />
+                <ValidationMessage For="() => editModel.CurrentWeightKg" class="form-error" />
+            </div>
+
+            <div>
+                <label class="label" for="edit-activity">Activity level</label>
+                <InputSelect id="edit-activity" class="input" @bind-Value="editModel.ActivityLevel">
+                    <option value="Sedentary">Sedentary</option>
+                    <option value="LightlyActive">Lightly active</option>
+                    <option value="ModeratelyActive">Moderately active</option>
+                    <option value="VeryActive">Very active</option>
+                    <option value="ExtraActive">Extra active</option>
+                </InputSelect>
+            </div>
+
+            @if (isSaving)
+            {
+                <LoadingIndicator Message="Saving..." />
+            }
+            else
+            {
+                <div class="flex gap-3">
+                    <button type="button" class="btn-outline flex-1" @onclick="() => isEditing = false">Cancel</button>
+                    <button type="submit" class="btn-primary flex-1">Save</button>
+                </div>
+            }
+        </EditForm>
+    }
+    else if (profile is not null)
     {
         <div class="card mb-4 flex flex-col gap-1">
             <p class="font-medium">@profile.Name</p>
             <p class="text-sm text-text-secondary">@profile.Sex · @profile.HeightCm cm · @profile.CurrentWeightKg kg</p>
             <p class="text-sm text-text-secondary">Activity level: @profile.ActivityLevel</p>
+            <button type="button" class="btn-outline mt-2" @onclick="BeginEdit">Edit profile</button>
         </div>
     }
     else if (errorMessage is null)
@@ -27,27 +90,82 @@ else
         <EmptyState Icon="👤" Title="No profile yet" Description="Complete your profile to personalize your plan." />
     }
 
+    <h2 class="mb-2 mt-2 font-medium">Goals</h2>
+
+    @if (goals.Count == 0)
+    {
+        <EmptyState Icon="🎯" Title="No goals yet" />
+    }
+    else
+    {
+        <div class="mb-4 flex flex-col gap-2">
+            @foreach (var goal in goals)
+            {
+                <div class="card flex items-center justify-between">
+                    <div>
+                        <p class="font-medium">@goal.Type</p>
+                        <p class="text-sm text-text-secondary">Target: @goal.TargetValue by @goal.TargetDate.ToString("d")</p>
+                    </div>
+                    <button type="button" class="btn-danger" @onclick="() => DeleteGoalAsync(goal.Id)">Delete</button>
+                </div>
+            }
+        </div>
+    }
+
+    <EditForm Model="newGoal" OnValidSubmit="AddGoalAsync" class="card mb-4 flex flex-col gap-3">
+        <DataAnnotationsValidator />
+        <p class="font-medium">Add a goal</p>
+
+        <InputSelect class="input" @bind-Value="newGoal.Type">
+            <option value="@GoalTypes.WeightLoss">Weight loss</option>
+            <option value="@GoalTypes.WeightGain">Weight gain</option>
+            <option value="@GoalTypes.MuscleGain">Muscle gain</option>
+            <option value="@GoalTypes.Endurance">Endurance</option>
+            <option value="@GoalTypes.Custom">Custom</option>
+        </InputSelect>
+
+        @if (newGoal.Type == GoalTypes.Custom)
+        {
+            <InputText class="input" placeholder="Describe your goal" @bind-Value="newGoal.CustomType" />
+        }
+
+        <InputNumber class="input" placeholder="Target value" @bind-Value="newGoal.TargetValue" />
+        <InputDate class="input" @bind-Value="newGoal.TargetDate" />
+
+        @if (isAddingGoal)
+        {
+            <LoadingIndicator Message="Adding goal..." />
+        }
+        else
+        {
+            <button type="submit" class="btn-primary">Add goal</button>
+        }
+    </EditForm>
+
     <button type="button" class="btn-outline" @onclick="LogoutAsync">Log out</button>
 }
 
 @code {
     private bool isLoading = true;
+    private bool isEditing;
+    private bool isSaving;
+    private bool isAddingGoal;
     private string? errorMessage;
     private ProfileSummary? profile;
+    private List<GoalSummary> goals = [];
+    private readonly EditProfileModel editModel = new();
+    private readonly NewGoalModel newGoal = new();
 
-    protected override Task OnInitializedAsync() => LoadProfileAsync();
+    protected override Task OnInitializedAsync() => LoadAllAsync();
 
-    private async Task LoadProfileAsync()
+    private async Task LoadAllAsync()
     {
         isLoading = true;
         errorMessage = null;
         try
         {
-            profile = await Api.GetAsync<ProfileSummary>("api/profile");
-        }
-        catch (ApiException ex) when (ex.StatusCode == 404)
-        {
-            profile = null;
+            await LoadProfileAsync();
+            goals = (await Api.GetAsync<List<GoalSummary>>("api/goals")) ?? [];
         }
         catch (ApiException ex)
         {
@@ -59,10 +177,132 @@ else
         }
     }
 
+    private async Task LoadProfileAsync()
+    {
+        try
+        {
+            profile = await Api.GetAsync<ProfileSummary>("api/profile");
+        }
+        catch (ApiException ex) when (ex.StatusCode == 404)
+        {
+            profile = null;
+        }
+    }
+
+    private void BeginEdit()
+    {
+        if (profile is null)
+        {
+            return;
+        }
+
+        editModel.Name = profile.Name;
+        editModel.DateOfBirth = profile.DateOfBirth;
+        editModel.Sex = profile.Sex;
+        editModel.HeightCm = profile.HeightCm;
+        editModel.CurrentWeightKg = profile.CurrentWeightKg;
+        editModel.ActivityLevel = profile.ActivityLevel;
+        isEditing = true;
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        isSaving = true;
+        errorMessage = null;
+        try
+        {
+            await Api.PutAsync("api/profile", new ProfileSetupRequest(
+                editModel.Name, editModel.DateOfBirth, editModel.Sex, editModel.HeightCm,
+                editModel.CurrentWeightKg, editModel.ActivityLevel));
+            await LoadProfileAsync();
+            isEditing = false;
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task AddGoalAsync()
+    {
+        if (newGoal.Type == GoalTypes.Custom && string.IsNullOrWhiteSpace(newGoal.CustomType))
+        {
+            errorMessage = "Please describe your custom goal.";
+            return;
+        }
+
+        isAddingGoal = true;
+        errorMessage = null;
+        try
+        {
+            var goalType = newGoal.Type == GoalTypes.Custom ? newGoal.CustomType.Trim() : newGoal.Type;
+            await Api.PostAsync("api/goals", new CreateGoalRequest(goalType, newGoal.TargetValue, newGoal.TargetDate));
+            goals = (await Api.GetAsync<List<GoalSummary>>("api/goals")) ?? [];
+            newGoal.Type = GoalTypes.WeightLoss;
+            newGoal.CustomType = string.Empty;
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isAddingGoal = false;
+        }
+    }
+
+    private async Task DeleteGoalAsync(Guid id)
+    {
+        errorMessage = null;
+        try
+        {
+            await Api.DeleteAsync($"api/goals/{id}");
+            goals = goals.Where(g => g.Id != id).ToList();
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
     private async Task LogoutAsync()
     {
         await TokenStore.ClearAsync();
         AuthState.SignOut();
         Navigation.NavigateTo("/login");
+    }
+
+    private class EditProfileModel
+    {
+        [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(200, MinimumLength = 1)]
+        public string Name { get; set; } = string.Empty;
+
+        public DateOnly DateOfBirth { get; set; }
+
+        public string Sex { get; set; } = "PreferNotToSay";
+
+        [System.ComponentModel.DataAnnotations.Range(50, 300)]
+        public int HeightCm { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(20, 400)]
+        public decimal CurrentWeightKg { get; set; }
+
+        public string ActivityLevel { get; set; } = "ModeratelyActive";
+    }
+
+    private class NewGoalModel
+    {
+        public string Type { get; set; } = GoalTypes.WeightLoss;
+
+        public string CustomType { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Range(0.01, double.MaxValue)]
+        public decimal TargetValue { get; set; } = 1;
+
+        public DateOnly TargetDate { get; set; } = DateOnly.FromDateTime(DateTime.Today.AddMonths(3));
     }
 }
