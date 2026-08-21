@@ -15,6 +15,10 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
             InvalidRefreshTokenException => (StatusCodes.Status401Unauthorized, new ApiErrorResponse("invalid_refresh_token", exception.Message)),
             ProfileNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("profile_not_found", exception.Message)),
             GoalNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("goal_not_found", exception.Message)),
+            ExerciseNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("exercise_not_found", exception.Message)),
+            PlanNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("plan_not_found", exception.Message)),
+            PlanAccessDeniedException => (StatusCodes.Status403Forbidden, new ApiErrorResponse("plan_access_denied", exception.Message)),
+            PlanExerciseNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("plan_exercise_not_found", exception.Message)),
             _ => (StatusCodes.Status500InternalServerError, new ApiErrorResponse("internal_error", "An unexpected error occurred."))
         };
 

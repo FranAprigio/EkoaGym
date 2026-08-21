@@ -2,11 +2,15 @@ using System.Text;
 using EkoaGym.Api.ExceptionHandling;
 using EkoaGym.Application.Auth;
 using EkoaGym.Application.Common.Configuration;
+using EkoaGym.Application.Exercises;
 using EkoaGym.Application.Goals;
+using EkoaGym.Application.Plans;
 using EkoaGym.Application.Profiles;
 using EkoaGym.Domain.Entities;
+using EkoaGym.Infrastructure.Exercises;
 using EkoaGym.Infrastructure.Goals;
 using EkoaGym.Infrastructure.Persistence;
+using EkoaGym.Infrastructure.Plans;
 using EkoaGym.Infrastructure.Profiles;
 using EkoaGym.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -31,12 +35,16 @@ builder.Services.AddDbContext<EkoaGymDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.Configure<ProgressionOptions>(builder.Configuration.GetSection(ProgressionOptions.SectionName));
 
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IGoalService, GoalService>();
+builder.Services.AddScoped<IExerciseService, ExerciseService>();
+builder.Services.AddScoped<IWorkoutPlanService, WorkoutPlanService>();
+builder.Services.AddScoped<IProgressionService, ProgressionService>();
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

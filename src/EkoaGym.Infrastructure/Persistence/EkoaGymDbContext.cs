@@ -1,4 +1,5 @@
 using EkoaGym.Domain.Entities;
+using EkoaGym.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 
 namespace EkoaGym.Infrastructure.Persistence;
@@ -9,6 +10,10 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<Goal> Goals => Set<Goal>();
+    public DbSet<Exercise> Exercises => Set<Exercise>();
+    public DbSet<WorkoutPlan> WorkoutPlans => Set<WorkoutPlan>();
+    public DbSet<WorkoutPlanExercise> WorkoutPlanExercises => Set<WorkoutPlanExercise>();
+    public DbSet<SessionSetLog> SessionSetLogs => Set<SessionSetLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -56,6 +61,67 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
                 .WithMany()
                 .HasForeignKey(g => g.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Exercise>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.MuscleGroup).HasConversion<string>().HasMaxLength(30);
+            entity.Property(e => e.Equipment).HasConversion<string>().HasMaxLength(30);
+            entity.Property(e => e.Difficulty).HasConversion<string>().HasMaxLength(20);
+            entity.Property(e => e.InstructionText).IsRequired();
+            entity.HasIndex(e => e.MuscleGroup);
+            entity.HasIndex(e => e.Equipment);
+            entity.HasIndex(e => e.Difficulty);
+            entity.HasIndex(e => e.Name);
+            entity.HasData(ExerciseSeedData.All);
+        });
+
+        modelBuilder.Entity<WorkoutPlan>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+            entity.Property(p => p.Name).IsRequired().HasMaxLength(200);
+            entity.HasIndex(p => p.UserId);
+            entity.HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<WorkoutPlanExercise>(entity =>
+        {
+            entity.HasKey(pe => pe.Id);
+            entity.Property(pe => pe.WeightKg).HasColumnType("decimal(6,2)");
+            entity.HasIndex(pe => pe.PlanId);
+            entity.HasOne(pe => pe.Plan)
+                .WithMany()
+                .HasForeignKey(pe => pe.PlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(pe => pe.Exercise)
+                .WithMany()
+                .HasForeignKey(pe => pe.ExerciseId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SessionSetLog>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.WeightKg).HasColumnType("decimal(6,2)");
+            entity.HasIndex(s => new { s.UserId, s.PlanId, s.ExerciseId, s.CompletedAt });
+            // Restrict (not Cascade) to avoid a second cascade path to this table alongside User -> WorkoutPlan -> SessionSetLog.
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<WorkoutPlan>()
+                .WithMany()
+                .HasForeignKey(s => s.PlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<Exercise>()
+                .WithMany()
+                .HasForeignKey(s => s.ExerciseId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

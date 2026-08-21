@@ -22,6 +22,564 @@ namespace EkoaGym.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("EkoaGym.Domain.Entities.Exercise", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Equipment")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InstructionText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MuscleGroup")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Difficulty");
+
+                    b.HasIndex("Equipment");
+
+                    b.HasIndex("MuscleGroup");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("Exercises");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Barbell",
+                            ImageUrl = "/uploads/exercises/barbell-bench-press.gif",
+                            InstructionText = "Lie on a flat bench, lower the bar to mid-chest with control, then press it back up to full arm extension.",
+                            MuscleGroup = "Chest",
+                            Name = "Barbell Bench Press",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Dumbbell",
+                            ImageUrl = "/uploads/exercises/incline-dumbbell-press.gif",
+                            InstructionText = "On an inclined bench, press two dumbbells from shoulder height to full extension, targeting the upper chest.",
+                            MuscleGroup = "Chest",
+                            Name = "Incline Dumbbell Press",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Bodyweight",
+                            ImageUrl = "/uploads/exercises/push-up.gif",
+                            InstructionText = "Keep your body in a straight line and lower your chest to the floor, then push back up to full arm extension.",
+                            MuscleGroup = "Chest",
+                            Name = "Push-Up",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Cable",
+                            ImageUrl = "/uploads/exercises/cable-chest-fly.gif",
+                            InstructionText = "With cables set at chest height, bring the handles together in front of you with a slight bend in the elbows.",
+                            MuscleGroup = "Chest",
+                            Name = "Cable Chest Fly",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Barbell",
+                            ImageUrl = "/uploads/exercises/deadlift.gif",
+                            InstructionText = "Hinge at the hips to grip the bar, then drive through the floor to stand tall, keeping the bar close to your body.",
+                            MuscleGroup = "Back",
+                            Name = "Deadlift",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000006"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "PullUpBar",
+                            ImageUrl = "/uploads/exercises/pull-up.gif",
+                            InstructionText = "Hang from a bar with palms facing away, then pull your chin above the bar and lower back down with control.",
+                            MuscleGroup = "Back",
+                            Name = "Pull-Up",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000007"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Barbell",
+                            ImageUrl = "/uploads/exercises/bent-over-barbell-row.gif",
+                            InstructionText = "Hinge forward with a flat back and row the bar toward your lower ribs, squeezing your shoulder blades together.",
+                            MuscleGroup = "Back",
+                            Name = "Bent-Over Barbell Row",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000008"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Machine",
+                            ImageUrl = "/uploads/exercises/lat-pulldown.gif",
+                            InstructionText = "Pull the bar down to upper chest level while keeping your torso upright, then control it back to full extension.",
+                            MuscleGroup = "Back",
+                            Name = "Lat Pulldown",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000009"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Barbell",
+                            ImageUrl = "/uploads/exercises/overhead-barbell-press.gif",
+                            InstructionText = "Press the bar from shoulder height straight overhead until your arms are fully extended, then lower with control.",
+                            MuscleGroup = "Shoulders",
+                            Name = "Overhead Barbell Press",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000a"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Dumbbell",
+                            ImageUrl = "/uploads/exercises/dumbbell-lateral-raise.gif",
+                            InstructionText = "Raise two dumbbells out to the sides until arms are roughly parallel to the floor, then lower slowly.",
+                            MuscleGroup = "Shoulders",
+                            Name = "Dumbbell Lateral Raise",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000b"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Cable",
+                            ImageUrl = "/uploads/exercises/face-pull.gif",
+                            InstructionText = "Pull a rope attachment toward your face at eye height, flaring your elbows out to target the rear delts.",
+                            MuscleGroup = "Shoulders",
+                            Name = "Face Pull",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000c"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Dumbbell",
+                            ImageUrl = "/uploads/exercises/arnold-press.gif",
+                            InstructionText = "Start with palms facing you at shoulder height, rotate outward while pressing the dumbbells overhead.",
+                            MuscleGroup = "Shoulders",
+                            Name = "Arnold Press",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000d"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Barbell",
+                            ImageUrl = "/uploads/exercises/barbell-curl.gif",
+                            InstructionText = "Curl the bar from thigh height to shoulder height, keeping elbows fixed at your sides throughout.",
+                            MuscleGroup = "Biceps",
+                            Name = "Barbell Curl",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000e"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Dumbbell",
+                            ImageUrl = "/uploads/exercises/dumbbell-hammer-curl.gif",
+                            InstructionText = "Curl dumbbells with palms facing each other throughout the movement to emphasize the brachialis.",
+                            MuscleGroup = "Biceps",
+                            Name = "Dumbbell Hammer Curl",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000f"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Cable",
+                            ImageUrl = "/uploads/exercises/cable-curl.gif",
+                            InstructionText = "Using a straight bar attachment, curl the cable up to shoulder height while keeping elbows stationary.",
+                            MuscleGroup = "Biceps",
+                            Name = "Cable Curl",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000010"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Bodyweight",
+                            ImageUrl = "/uploads/exercises/triceps-dip.gif",
+                            InstructionText = "Lower your body between parallel bars until elbows reach roughly 90 degrees, then press back up.",
+                            MuscleGroup = "Triceps",
+                            Name = "Triceps Dip",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000011"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Cable",
+                            ImageUrl = "/uploads/exercises/cable-triceps-pushdown.gif",
+                            InstructionText = "Push a bar or rope attachment down until arms are fully extended, keeping elbows tucked at your sides.",
+                            MuscleGroup = "Triceps",
+                            Name = "Cable Triceps Pushdown",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000012"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Barbell",
+                            ImageUrl = "/uploads/exercises/skull-crusher.gif",
+                            InstructionText = "Lying on a bench, lower the bar toward your forehead by bending only at the elbows, then extend back up.",
+                            MuscleGroup = "Triceps",
+                            Name = "Skull Crusher",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000013"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Dumbbell",
+                            ImageUrl = "/uploads/exercises/wrist-curl.gif",
+                            InstructionText = "Resting forearms on your thighs or a bench, curl the dumbbell upward using only your wrists.",
+                            MuscleGroup = "Forearms",
+                            Name = "Wrist Curl",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000014"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Dumbbell",
+                            ImageUrl = "/uploads/exercises/farmers-carry.gif",
+                            InstructionText = "Carry a heavy dumbbell or kettlebell in each hand for a set distance while keeping your posture upright.",
+                            MuscleGroup = "Forearms",
+                            Name = "Farmer's Carry",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000015"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Bodyweight",
+                            ImageUrl = "/uploads/exercises/plank.gif",
+                            InstructionText = "Hold a straight-line position on your forearms and toes, keeping your core braced and hips level.",
+                            MuscleGroup = "Abs",
+                            Name = "Plank",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000016"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Advanced",
+                            Equipment = "PullUpBar",
+                            ImageUrl = "/uploads/exercises/hanging-leg-raise.gif",
+                            InstructionText = "Hang from a bar and raise your legs to hip height or higher without swinging, then lower with control.",
+                            MuscleGroup = "Abs",
+                            Name = "Hanging Leg Raise",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000017"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Cable",
+                            ImageUrl = "/uploads/exercises/cable-crunch.gif",
+                            InstructionText = "Kneeling below a high cable, crunch your torso down toward your knees by flexing the abs, not the hips.",
+                            MuscleGroup = "Abs",
+                            Name = "Cable Crunch",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000018"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "MedicineBall",
+                            ImageUrl = "/uploads/exercises/russian-twist.gif",
+                            InstructionText = "Sit with knees bent and torso leaned back slightly, rotating a weight from side to side across your body.",
+                            MuscleGroup = "Abs",
+                            Name = "Russian Twist",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000019"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Barbell",
+                            ImageUrl = "/uploads/exercises/barbell-back-squat.gif",
+                            InstructionText = "With the bar racked on your upper back, squat down until thighs are at least parallel to the floor, then stand.",
+                            MuscleGroup = "Quadriceps",
+                            Name = "Barbell Back Squat",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000001a"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Machine",
+                            ImageUrl = "/uploads/exercises/leg-press.gif",
+                            InstructionText = "Push the platform away by extending your knees and hips, then lower it back under control.",
+                            MuscleGroup = "Quadriceps",
+                            Name = "Leg Press",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000001b"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Dumbbell",
+                            ImageUrl = "/uploads/exercises/walking-lunge.gif",
+                            InstructionText = "Step forward into a lunge, lowering the back knee toward the floor, then bring the trailing leg through to the next step.",
+                            MuscleGroup = "Quadriceps",
+                            Name = "Walking Lunge",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000001c"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Machine",
+                            ImageUrl = "/uploads/exercises/leg-extension.gif",
+                            InstructionText = "Extend your knees against the machine's resistance pad until legs are straight, then lower with control.",
+                            MuscleGroup = "Quadriceps",
+                            Name = "Leg Extension",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000001d"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Barbell",
+                            ImageUrl = "/uploads/exercises/romanian-deadlift.gif",
+                            InstructionText = "With a slight knee bend, hinge at the hips to lower the bar along your legs, feeling a stretch in the hamstrings.",
+                            MuscleGroup = "Hamstrings",
+                            Name = "Romanian Deadlift",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000001e"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Machine",
+                            ImageUrl = "/uploads/exercises/leg-curl.gif",
+                            InstructionText = "Curl the machine's pad toward your glutes by flexing at the knee, then lower back to the start position.",
+                            MuscleGroup = "Hamstrings",
+                            Name = "Leg Curl",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000001f"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Advanced",
+                            Equipment = "Barbell",
+                            ImageUrl = "/uploads/exercises/good-morning.gif",
+                            InstructionText = "With the bar on your upper back, hinge forward at the hips keeping a flat back, then return to standing.",
+                            MuscleGroup = "Hamstrings",
+                            Name = "Good Morning",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000020"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Barbell",
+                            ImageUrl = "/uploads/exercises/hip-thrust.gif",
+                            InstructionText = "With shoulders on a bench and the bar over your hips, drive through your heels to lift your hips to full extension.",
+                            MuscleGroup = "Glutes",
+                            Name = "Hip Thrust",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000021"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Bodyweight",
+                            ImageUrl = "/uploads/exercises/glute-bridge.gif",
+                            InstructionText = "Lying on your back with knees bent, drive through your heels to raise your hips, squeezing the glutes at the top.",
+                            MuscleGroup = "Glutes",
+                            Name = "Glute Bridge",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000022"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Cable",
+                            ImageUrl = "/uploads/exercises/cable-kickback.gif",
+                            InstructionText = "With an ankle cuff attached to a low cable, kick your leg straight back while keeping your torso stable.",
+                            MuscleGroup = "Glutes",
+                            Name = "Cable Kickback",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000023"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Machine",
+                            ImageUrl = "/uploads/exercises/standing-calf-raise.gif",
+                            InstructionText = "Rise onto the balls of your feet as high as possible, then lower your heels below the platform for a full stretch.",
+                            MuscleGroup = "Calves",
+                            Name = "Standing Calf Raise",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000024"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Machine",
+                            ImageUrl = "/uploads/exercises/seated-calf-raise.gif",
+                            InstructionText = "With knees bent under the pad, raise your heels by extending your ankles, then lower back down slowly.",
+                            MuscleGroup = "Calves",
+                            Name = "Seated Calf Raise",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000025"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Kettlebell",
+                            ImageUrl = "/uploads/exercises/kettlebell-swing.gif",
+                            InstructionText = "Hinge at the hips to swing the kettlebell between your legs, then snap your hips forward to drive it to chest height.",
+                            MuscleGroup = "FullBody",
+                            Name = "Kettlebell Swing",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000026"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Equipment = "Bodyweight",
+                            ImageUrl = "/uploads/exercises/burpee.gif",
+                            InstructionText = "From standing, drop into a push-up, then explosively return to standing and jump, repeating in one fluid motion.",
+                            MuscleGroup = "FullBody",
+                            Name = "Burpee",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000027"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Advanced",
+                            Equipment = "Barbell",
+                            ImageUrl = "/uploads/exercises/clean-and-press.gif",
+                            InstructionText = "Explosively pull the bar from the floor to your shoulders, then press it overhead to full arm extension.",
+                            MuscleGroup = "FullBody",
+                            Name = "Clean and Press",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000028"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Other",
+                            ImageUrl = "/uploads/exercises/treadmill-running.gif",
+                            InstructionText = "Maintain a steady running pace on the treadmill, adjusting speed and incline to control intensity.",
+                            MuscleGroup = "Cardio",
+                            Name = "Treadmill Running",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000029"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Machine",
+                            ImageUrl = "/uploads/exercises/rowing-machine.gif",
+                            InstructionText = "Drive with your legs, then lean back and pull the handle to your ribs, reversing the sequence on the return.",
+                            MuscleGroup = "Cardio",
+                            Name = "Rowing Machine",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000002a"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Equipment = "Other",
+                            ImageUrl = "/uploads/exercises/jump-rope.gif",
+                            InstructionText = "Turn the rope with your wrists and jump just high enough to clear it, keeping a steady, light rhythm.",
+                            MuscleGroup = "Cardio",
+                            Name = "Jump Rope",
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        });
+                });
+
             modelBuilder.Entity("EkoaGym.Domain.Entities.Goal", b =>
                 {
                     b.Property<Guid>("Id")
@@ -88,6 +646,47 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.SessionSetLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ExerciseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Reps")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SetNumber")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("WeightKg")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExerciseId");
+
+                    b.HasIndex("PlanId");
+
+                    b.HasIndex("UserId", "PlanId", "ExerciseId", "CompletedAt");
+
+                    b.ToTable("SessionSetLogs");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.User", b =>
@@ -174,6 +773,72 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.ToTable("UserProfiles");
                 });
 
+            modelBuilder.Entity("EkoaGym.Domain.Entities.WorkoutPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("WorkoutPlans");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.WorkoutPlanExercise", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ExerciseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Reps")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RestSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Sets")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("WeightKg")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExerciseId");
+
+                    b.HasIndex("PlanId");
+
+                    b.ToTable("WorkoutPlanExercises");
+                });
+
             modelBuilder.Entity("EkoaGym.Domain.Entities.Goal", b =>
                 {
                     b.HasOne("EkoaGym.Domain.Entities.User", "User")
@@ -196,6 +861,27 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("EkoaGym.Domain.Entities.SessionSetLog", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.Exercise", null)
+                        .WithMany()
+                        .HasForeignKey("ExerciseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EkoaGym.Domain.Entities.WorkoutPlan", null)
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EkoaGym.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("EkoaGym.Domain.Entities.UserProfile", b =>
                 {
                     b.HasOne("EkoaGym.Domain.Entities.User", "User")
@@ -205,6 +891,36 @@ namespace EkoaGym.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.WorkoutPlan", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.WorkoutPlanExercise", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.Exercise", "Exercise")
+                        .WithMany()
+                        .HasForeignKey("ExerciseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EkoaGym.Domain.Entities.WorkoutPlan", "Plan")
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Exercise");
+
+                    b.Navigation("Plan");
                 });
 #pragma warning restore 612, 618
         }

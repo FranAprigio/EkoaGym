@@ -89,3 +89,16 @@ CORS allowed origins for the mobile app are configured under `Cors:AllowedOrigin
 - `POST /api/auth/refresh` — `{ refreshToken }` → 200 with a new token pair (refresh tokens are rotated/single-use), 401 if invalid/expired/revoked.
 - All other controllers must add `[Authorize]` explicitly (see `AuthController` for the `[AllowAnonymous]` exception); requests without a valid JWT bearer token get 401.
 
+## Exercise library
+
+- `GET /api/exercises` — public, no auth required. Filter with `?muscleGroup=`, `?equipment=`, `?difficulty=` (enum names) and `?q=` (name search); paginate with `?page=` (default 1) and `?pageSize=` (default 20, max 100).
+- `GET /api/exercises/{id}` — public, returns full detail (instructions + image URL) or 404 if unknown.
+- The starter dataset (42 exercises, seeded via the `AddExercisesWithSeed` migration) is **original content written for this project**, not copied from WGER, ExerciseDB, or any other third-party source — so there are no external license terms to track for it. `ImageUrl` values are placeholders following the `/uploads/exercises/<slug>.gif` convention; real media still needs to be uploaded to that path (or swapped for real blob storage/CDN URLs) before going live. If a licensed third-party dataset (e.g. WGER, CC BY-SA 4.0) is imported later, record its license and attribution requirements here.
+
+## Workout plans
+
+- `GET/POST/PUT/DELETE /api/plans` and `POST /api/plans/{id}/duplicate` — all scoped to the authenticated user. Unlike Goals/Profile (which 404 on another user's resource), attempting to read/modify **another user's plan returns 403** per this epic's acceptance criteria — an intentional inconsistency across epics, not a bug.
+- `POST`/`PUT` body: `{ name, exercises: [{ exerciseId, sets, reps, weightKg, restSeconds }, ...] }`. Exercise order is taken from array position (no separate `orderIndex` field to send); every `exerciseId` must reference an existing exercise (404 otherwise). `PUT` fully replaces the exercise list.
+- `GET /api/plans/{planId}/exercises/{exerciseId}/next-target` suggests the next session's `Sets`/`Reps`/`WeightKg` (progressive overload): if every set in the most recently logged session met or exceeded the planned reps/weight, it suggests `+Progression:WeightIncrementKg` (default 2.5kg, configurable in appsettings); otherwise it repeats the plan's current values. Returns the plan's own values if there's no session history yet.
+  - **Important**: this reads from a new `SessionSetLog` table that this epic added as a read-only prerequisite — there is no endpoint yet to *write* to it (that belongs to a future workout-session-logging epic). Until that exists, `next-target` will always fall back to "no history" and return the plan's planned values as-is.
+
