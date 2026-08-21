@@ -1,0 +1,202 @@
+@page "/exercises/{Id:guid}"
+@inject ApiClient Api
+@inject ISyncService SyncService
+@inject NavigationManager Navigation
+
+<h1 class="mb-4 text-xl font-semibold">Exercise Detail</h1>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else if (errorMessage is not null)
+{
+    <ErrorBanner Message="@errorMessage" OnRetry="LoadAsync" />
+}
+else if (exercise is not null)
+{
+    <div class="card mb-4 flex flex-col gap-3">
+        @if (!string.IsNullOrEmpty(exercise.ImageUrl))
+        {
+            <img src="@ResolveImageUrl(exercise.ImageUrl)" alt="@exercise.Name"
+                 class="h-48 w-full rounded-lg object-cover"
+                 onerror="this.style.display='none'" />
+        }
+
+        <div>
+            <p class="text-lg font-semibold">@exercise.Name</p>
+            <p class="text-sm text-text-secondary">@exercise.MuscleGroup · @exercise.Equipment · @exercise.Difficulty</p>
+        </div>
+
+        @if (isOfflineFallback)
+        {
+            <p class="text-xs text-text-secondary">Showing cached info — full instructions aren't available offline.</p>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(exercise.InstructionText))
+        {
+            <div>
+                <p class="label">Instructions</p>
+                <p class="text-sm">@exercise.InstructionText</p>
+            </div>
+        }
+    </div>
+
+    @if (isChoosingPlan)
+    {
+        <div class="card flex flex-col gap-3">
+            <p class="font-medium">Add to a plan</p>
+
+            @if (plans.Count > 0)
+            {
+                @foreach (var plan in plans)
+                {
+                    <button type="button" class="btn-outline flex justify-between" @onclick="() => AddToExistingPlanAsync(plan.Id)">
+                        <span>@plan.Name</span>
+                        <span>Add</span>
+                    </button>
+                }
+            }
+
+            <div class="flex gap-2">
+                <input class="input" placeholder="New plan name" @bind="newPlanName" @bind:event="oninput" />
+                <button type="button" class="btn-primary" @onclick="CreatePlanAndAddAsync">Create</button>
+            </div>
+
+            <ErrorBanner Message="@addToPlanError" />
+
+            @if (isSavingPlan)
+            {
+                <LoadingIndicator Message="Saving..." />
+            }
+
+            <button type="button" class="btn-outline" @onclick="() => isChoosingPlan = false">Cancel</button>
+        </div>
+    }
+    else
+    {
+        <button type="button" class="btn-primary w-full" @onclick="BeginAddToPlanAsync">Add to Plan</button>
+        @if (!string.IsNullOrEmpty(addedMessage))
+        {
+            <p class="mt-2 text-center text-sm text-accent">@addedMessage</p>
+        }
+    }
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private bool isLoading = true;
+    private bool isOfflineFallback;
+    private string? errorMessage;
+    private ExerciseDetailResponse? exercise;
+
+    private bool isChoosingPlan;
+    private bool isSavingPlan;
+    private string? addToPlanError;
+    private string? addedMessage;
+    private string newPlanName = string.Empty;
+    private IReadOnlyList<PlanSummary> plans = [];
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        isOfflineFallback = false;
+        try
+        {
+            exercise = await Api.GetAsync<ExerciseDetailResponse>($"api/exercises/{Id}");
+        }
+        catch (ApiException)
+        {
+            var cached = await SyncService.GetExercisesAsync();
+            var match = cached.FirstOrDefault(e => e.Id == Id);
+            if (match is not null)
+            {
+                exercise = new ExerciseDetailResponse(match.Id, match.Name, match.MuscleGroup, match.Equipment, match.Difficulty, match.ImageUrl, string.Empty);
+                isOfflineFallback = true;
+            }
+            else
+            {
+                errorMessage = "Couldn't load this exercise. Check your connection and try again.";
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string ResolveImageUrl(string imageUrl) =>
+        Uri.IsWellFormedUriString(imageUrl, UriKind.Absolute) ? imageUrl : new Uri(new Uri(ApiEndpointOptions.BaseUrl), imageUrl).ToString();
+
+    private async Task BeginAddToPlanAsync()
+    {
+        isChoosingPlan = true;
+        addToPlanError = null;
+        addedMessage = null;
+        plans = await SyncService.GetPlansAsync();
+    }
+
+    private async Task AddToExistingPlanAsync(Guid planId)
+    {
+        isSavingPlan = true;
+        addToPlanError = null;
+        try
+        {
+            var plan = await Api.GetAsync<PlanDetail>($"api/plans/{planId}");
+            if (plan is null)
+            {
+                addToPlanError = "That plan couldn't be found.";
+                return;
+            }
+
+            var updatedExercises = plan.Exercises
+                .Select(e => new PlanExerciseRequest(e.ExerciseId, e.Sets, e.Reps, e.WeightKg, e.RestSeconds))
+                .Append(new PlanExerciseRequest(Id, 3, 10, 0, 60))
+                .ToList();
+
+            await Api.PutAsync($"api/plans/{planId}", new UpdatePlanRequest(plan.Name, updatedExercises));
+            addedMessage = $"Added to \"{plan.Name}\".";
+            isChoosingPlan = false;
+        }
+        catch (ApiException ex)
+        {
+            addToPlanError = ex.Message;
+        }
+        finally
+        {
+            isSavingPlan = false;
+        }
+    }
+
+    private async Task CreatePlanAndAddAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newPlanName))
+        {
+            addToPlanError = "Enter a name for the new plan.";
+            return;
+        }
+
+        isSavingPlan = true;
+        addToPlanError = null;
+        try
+        {
+            var newExercise = new PlanExerciseRequest(Id, 3, 10, 0, 60);
+            await Api.PostAsync<PlanDetail>("api/plans", new CreatePlanRequest(newPlanName.Trim(), [newExercise]));
+            addedMessage = $"Created \"{newPlanName.Trim()}\" with this exercise.";
+            newPlanName = string.Empty;
+            isChoosingPlan = false;
+        }
+        catch (ApiException ex)
+        {
+            addToPlanError = ex.Message;
+        }
+        finally
+        {
+            isSavingPlan = false;
+        }
+    }
+}

@@ -12,6 +12,9 @@ public interface ISyncService
 
     Task<IReadOnlyList<ExerciseSummary>> GetExercisesAsync(CancellationToken ct = default);
 
+    // Server-side search/filter/pagination when online; falls back to filtering the cached library when offline.
+    Task<PagedResult<ExerciseSummary>> SearchExercisesAsync(ExerciseSearchFilter filter, CancellationToken ct = default);
+
     Task<SessionSummary?> GetLastSessionAsync(CancellationToken ct = default);
 
     // Queues a write (e.g. logging a set) made while offline, to be replayed once connectivity returns.

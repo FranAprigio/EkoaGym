@@ -85,6 +85,56 @@ public class SyncService : ISyncService
         }
     }
 
+    public async Task<PagedResult<ExerciseSummary>> SearchExercisesAsync(ExerciseSearchFilter filter, CancellationToken ct = default)
+    {
+        var queryParams = new List<string> { $"page={filter.Page}", $"pageSize={filter.PageSize}" };
+        if (!string.IsNullOrWhiteSpace(filter.Query))
+        {
+            queryParams.Add($"q={Uri.EscapeDataString(filter.Query)}");
+        }
+
+        if (!string.IsNullOrEmpty(filter.MuscleGroup))
+        {
+            queryParams.Add($"muscleGroup={filter.MuscleGroup}");
+        }
+
+        if (!string.IsNullOrEmpty(filter.Equipment))
+        {
+            queryParams.Add($"equipment={filter.Equipment}");
+        }
+
+        if (!string.IsNullOrEmpty(filter.Difficulty))
+        {
+            queryParams.Add($"difficulty={filter.Difficulty}");
+        }
+
+        try
+        {
+            var result = await apiClient.GetAsync<PagedResult<ExerciseSummary>>($"api/exercises?{string.Join('&', queryParams)}", ct);
+            if (result is not null)
+            {
+                await db.UpsertExercisesAsync(result.Items.Select(ToEntity));
+            }
+
+            return result ?? new PagedResult<ExerciseSummary>([], filter.Page, filter.PageSize, 0);
+        }
+        catch (ApiException)
+        {
+            var cached = await db.GetExercisesAsync();
+            var all = cached.Select(c => JsonSerializer.Deserialize<ExerciseSummary>(c.PayloadJson, JsonOptions)!);
+
+            var filtered = all.Where(e =>
+                    (string.IsNullOrWhiteSpace(filter.Query) || e.Name.Contains(filter.Query, StringComparison.OrdinalIgnoreCase)) &&
+                    (string.IsNullOrEmpty(filter.MuscleGroup) || e.MuscleGroup == filter.MuscleGroup) &&
+                    (string.IsNullOrEmpty(filter.Equipment) || e.Equipment == filter.Equipment) &&
+                    (string.IsNullOrEmpty(filter.Difficulty) || e.Difficulty == filter.Difficulty))
+                .ToList();
+
+            var page = filtered.Skip((filter.Page - 1) * filter.PageSize).Take(filter.PageSize).ToList();
+            return new PagedResult<ExerciseSummary>(page, filter.Page, filter.PageSize, filtered.Count);
+        }
+    }
+
     public async Task<SessionSummary?> GetLastSessionAsync(CancellationToken ct = default)
     {
         try

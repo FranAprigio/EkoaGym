@@ -72,6 +72,19 @@ public class LocalDatabaseService
         });
     }
 
+    // Used for partial/paged search results — inserts/updates without evicting the rest of the cached library.
+    public async Task UpsertExercisesAsync(IEnumerable<CachedExercise> exercises)
+    {
+        var conn = await GetConnectionAsync();
+        await conn.RunInTransactionAsync(tran =>
+        {
+            foreach (var exercise in exercises)
+            {
+                tran.InsertOrReplace(exercise);
+            }
+        });
+    }
+
     public async Task<CachedSession?> GetLastSessionAsync()
     {
         var conn = await GetConnectionAsync();
