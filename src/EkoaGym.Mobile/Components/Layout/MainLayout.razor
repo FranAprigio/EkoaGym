@@ -12,7 +12,11 @@
     <main class="flex-1 overflow-y-auto px-4 pb-20 pt-4">
         @if (isAuthorized)
         {
-            @Body
+            @* M-9.2: @key forces a fresh DOM node per navigation so the CSS animation class always
+               replays; NavMenu/OfflineBanner sit outside this wrapper and stay static across navigation. *@
+            <div @key="transitionKey" class="@transitionClass">
+                @Body
+            </div>
         }
         else
         {
@@ -28,10 +32,36 @@
 
 @code {
     private bool isAuthorized;
+    private readonly List<string> navHistory = [];
+    private string transitionKey = Guid.NewGuid().ToString();
+    private string transitionClass = "animate-fade-in-up";
 
     protected override void OnInitialized()
     {
         AuthState.AuthenticationExpired += OnAuthenticationExpired;
+        navHistory.Add(Navigation.Uri);
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        // Heuristic (no native navigation-stack API in a Blazor SPA): treat landing back on the entry
+        // just before the current one as "back" (slide from the left); anything else is a "forward" push
+        // (slide from the right) — matches the M-9.2 example (Exercises list -> Detail = forward) without
+        // needing every call site to explicitly declare its own direction.
+        if (navHistory.Count >= 2 && navHistory[^2] == e.Location)
+        {
+            navHistory.RemoveAt(navHistory.Count - 1);
+            transitionClass = "animate-slide-in-left";
+        }
+        else
+        {
+            navHistory.Add(e.Location);
+            transitionClass = "animate-slide-in-right";
+        }
+
+        transitionKey = Guid.NewGuid().ToString();
+        InvokeAsync(StateHasChanged);
     }
 
     protected override async Task OnInitializedAsync()
@@ -85,5 +115,6 @@
     public void Dispose()
     {
         AuthState.AuthenticationExpired -= OnAuthenticationExpired;
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 }

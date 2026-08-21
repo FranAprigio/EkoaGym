@@ -49,7 +49,7 @@ else if (exercise is not null)
 
             <div>
                 <p class="mb-1 text-sm text-text-secondary">Best set weight (kg)</p>
-                <LineChart Values="progressPoints.Select(p => p.BestSetWeightKg).ToList()" ColorClass="text-primary" />
+                <LineChart Values="progressPoints.Select(p => p.BestSetWeightKg).ToList()" PrFlags="progressPoints.Select(p => p.IsWeightPR).ToList()" ColorClass="text-primary" />
             </div>
 
             <div>

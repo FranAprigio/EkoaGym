@@ -1,11 +1,20 @@
-@* Minimal dependency-free SVG line chart — sufficient for simple progress trends, no charting library needed. *@
+@* Minimal dependency-free SVG line chart — sufficient for simple progress trends, no charting library needed.
+   M-9.4: the line draws in via a stroke-dashoffset transition, and points flagged via PrFlags pop in
+   slightly after — both only replay when the underlying Values actually change, never on an unrelated
+   re-render (e.g. pull-to-refresh with identical data). prefers-reduced-motion is handled globally by the
+   blanket override in app.tailwind.css, which collapses both the transition and the pop animation to ~0ms. *@
 <svg viewBox="0 0 300 100" preserveAspectRatio="none" class="h-32 w-full">
     @if (points.Count > 1)
     {
-        <polyline points="@PolylinePoints" fill="none" stroke-width="2" class="@ColorClass" style="stroke:currentColor" />
-        @foreach (var (x, y) in points)
+        <polyline points="@PolylinePoints" fill="none" stroke-width="2" class="@ColorClass"
+                  style="stroke:currentColor; stroke-dasharray:@pathLength.ToString("F1"); stroke-dashoffset:@((hasDrawn ? 0 : pathLength).ToString("F1")); transition: stroke-dashoffset 700ms cubic-bezier(0.4,0,0.2,1);" />
+        @for (var i = 0; i < points.Count; i++)
         {
-            <circle cx="@x.ToString("F1")" cy="@y.ToString("F1")" r="2.5" class="@ColorClass" style="fill:currentColor" />
+            var (x, y) = points[i];
+            var isPr = hasDrawn && PrFlags is not null && i < PrFlags.Count && PrFlags[i];
+            <circle cx="@x.ToString("F1")" cy="@y.ToString("F1")" r="@(isPr ? 4 : 2.5)"
+                    class="@ColorClass @(isPr ? "animate-pr-pop" : "")"
+                    style="fill:currentColor; @(isPr ? "animation-delay:750ms;" : "")" />
         }
     }
     else if (points.Count == 1)
@@ -21,18 +30,64 @@
     // (e.g. text-info for suggestions, text-accent for personal-record highlights).
     [Parameter] public string ColorClass { get; set; } = "text-primary";
 
+    // Parallel to Values — true for indices that should pop in as a personal-record highlight (M-9.4/M-7.3).
+    [Parameter] public IReadOnlyList<bool>? PrFlags { get; set; }
+
     private const double Width = 300;
     private const double Height = 100;
     private const double Padding = 10;
 
     private List<(double X, double Y)> points = [];
+    private double pathLength;
+    private bool hasDrawn;
+    private bool pendingDrawTrigger;
+    private string? previousSignature;
 
     protected override void OnParametersSet()
     {
+        var signature = string.Join(",", Values);
+        if (signature == previousSignature)
+        {
+            return;
+        }
+
+        previousSignature = signature;
         points = Compute();
+        pathLength = ComputePathLength();
+        hasDrawn = false;
+        pendingDrawTrigger = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!pendingDrawTrigger)
+        {
+            return;
+        }
+
+        pendingDrawTrigger = false;
+
+        // Let the browser paint the "undrawn" (full dashoffset) state first, then flip so the CSS
+        // transition actually animates — flipping in the same render would skip straight to drawn.
+        await Task.Delay(30);
+        hasDrawn = true;
+        StateHasChanged();
     }
 
     private string PolylinePoints => string.Join(" ", points.Select(p => $"{p.X:F1},{p.Y:F1}"));
+
+    private double ComputePathLength()
+    {
+        var length = 0.0;
+        for (var i = 1; i < points.Count; i++)
+        {
+            var (x1, y1) = points[i - 1];
+            var (x2, y2) = points[i];
+            length += Math.Sqrt(Math.Pow(x2 - x1, 2) + Math.Pow(y2 - y1, 2));
+        }
+
+        return length;
+    }
 
     private List<(double X, double Y)> Compute()
     {

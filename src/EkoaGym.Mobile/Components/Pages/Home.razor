@@ -51,11 +51,17 @@ else
                     {
                         var progress = ComputeGoalProgress(goal);
                         <div>
-                            <p class="text-sm font-medium">@goal.Type</p>
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm font-medium">@goal.Type</p>
+                                @if (progress.Fraction is double percentFraction)
+                                {
+                                    <p class="text-sm font-semibold text-accent"><CountUp Value="percentFraction * 100" Format="0" />%</p>
+                                }
+                            </div>
                             @if (progress.Fraction is double fraction)
                             {
                                 <div class="mt-1 h-2 w-full rounded-full bg-background">
-                                    <div class="h-2 rounded-full bg-accent" style="width: @((fraction * 100).ToString("F0"))%"></div>
+                                    <div class="h-2 rounded-full bg-accent transition-all duration-transition ease-app" style="width: @((fraction * 100).ToString("F0"))%"></div>
                                 </div>
                             }
                             <p class="text-xs text-text-secondary">@progress.Label</p>
@@ -141,6 +147,4 @@ else
     }
 
     private void GoToActiveWorkout(Guid planId) => Navigation.NavigateTo($"/active-workout/{planId}");
-}
-
 }

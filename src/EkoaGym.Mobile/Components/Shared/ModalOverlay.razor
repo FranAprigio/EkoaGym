@@ -1,0 +1,16 @@
+@* Modal-style overlay (M-9.2) — slide-up panel + backdrop fade, used for screens the AC calls out as
+   "modal-style" (reset-password, photo comparison) instead of a plain full route-swap fade. *@
+<div class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 animate-backdrop-fade" @onclick="CloseAsync">
+    <div class="w-full max-w-sm rounded-t-2xl bg-surface p-4" @onclick:stopPropagation="true">
+        <div class="animate-modal-slide-up">
+            @ChildContent
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private Task CloseAsync() => OnClose.InvokeAsync();
+}

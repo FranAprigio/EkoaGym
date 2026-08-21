@@ -151,7 +151,7 @@ else
                 <p class="font-medium">Biometric login</p>
                 <p class="text-sm text-text-secondary">Use fingerprint/Face ID instead of your password.</p>
             </div>
-            <input type="checkbox" checked="@biometricEnabled" @onchange="ToggleBiometricAsync" />
+            <ToggleSwitch Value="biometricEnabled" ValueChanged="ToggleBiometricAsync" />
         </div>
     }
 
@@ -289,9 +289,8 @@ else
         }
     }
 
-    private async Task ToggleBiometricAsync(ChangeEventArgs e)
+    private async Task ToggleBiometricAsync(bool enable)
     {
-        var enable = e.Value is bool value && value;
         if (enable)
         {
             await BiometricLoginService.EnableAsync();

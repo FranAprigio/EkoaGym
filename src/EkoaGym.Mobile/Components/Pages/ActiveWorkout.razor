@@ -6,6 +6,7 @@
 @inject ISyncService SyncService
 @inject LocalDatabaseService Db
 @inject IRestTimerNotifier RestNotifier
+@inject IMotionService Motion
 @inject NavigationManager Navigation
 @implements IDisposable
 
@@ -15,13 +16,26 @@
 }
 else if (isCompleted)
 {
-    <div class="card flex flex-col items-center gap-3 text-center">
+    <div class="card flex flex-col items-center gap-3 text-center animate-fade-in-up">
         <span class="text-3xl">✅</span>
         <p class="text-lg font-semibold">Workout complete!</p>
         @if (completionResult is not null)
         {
             <p class="text-sm text-text-secondary">Duration: @FormatDuration(completionResult.StartedAt, completionResult.EndedAt)</p>
         }
+        <div class="flex gap-6">
+            <div>
+                <p class="text-2xl font-semibold text-primary"><CountUp Value="finishedSetsLogged" /></p>
+                <p class="text-xs text-text-secondary">Sets logged</p>
+            </div>
+            @if (finishedPrCount > 0)
+            {
+                <div>
+                    <p class="text-2xl font-semibold text-accent"><CountUp Value="finishedPrCount" /></p>
+                    <p class="text-xs text-text-secondary">Personal record(s) 🏆</p>
+                </div>
+            }
+        </div>
         @if (!string.IsNullOrEmpty(pendingSyncMessage))
         {
             <p class="text-xs text-text-secondary">@pendingSyncMessage</p>
@@ -67,16 +81,26 @@ else
                 </div>
             </div>
 
-            <button type="button" class="btn-primary" @onclick="LogSetAsync">Log Set</button>
+            <button type="button" class="btn-primary relative" @onclick="LogSetAsync">
+                Log Set
+                @* M-9.1/M-9.3: @key forces a fresh element each successful log so the one-shot CSS
+                   pulse animation always replays, distinct from the end-of-workout celebration. *@
+                @if (logPulseCount > 0)
+                {
+                    <span @key="logPulseCount" class="pointer-events-none absolute inset-0 rounded-lg ring-4 ring-accent animate-success-pulse"></span>
+                }
+            </button>
 
             @if (CurrentExercise.LoggedSets.Count > 0)
             {
                 <div class="flex flex-col gap-1">
                     @foreach (var set in CurrentExercise.LoggedSets)
                     {
-                        <p class="text-sm text-text-secondary">
+                        <p class="text-sm @(set.IsWeightPR || set.IsRepPR ? "font-semibold text-accent animate-pr-pop" : "text-text-secondary")">
                             Set @set.SetNumber: @set.ActualReps reps at @set.ActualWeightKg kg
                             @(set.Synced ? "" : "(pending sync)")
+                            @(set.IsWeightPR ? " 🏆 Weight PR" : "")
+                            @(set.IsRepPR ? " 🏆 Rep PR" : "")
                         </p>
                     }
                 </div>
@@ -121,6 +145,9 @@ else
     private decimal actualWeightKg;
     private int restSecondsRemaining;
     private CancellationTokenSource? restCts;
+    private int logPulseCount;
+    private int finishedSetsLogged;
+    private int finishedPrCount;
 
     private ActiveWorkoutExercise? CurrentExercise => state?.Exercises.ElementAtOrDefault(state.CurrentExerciseIndex);
 
@@ -231,6 +258,8 @@ else
         }
 
         var exercise = CurrentExercise;
+        await EnsureProgressBaselineAsync(exercise);
+
         var setNumber = exercise.LoggedSets.Count + 1;
         var loggedSet = new LoggedSet
         {
@@ -239,10 +268,24 @@ else
             ActualWeightKg = actualWeightKg,
             CompletedAt = DateTime.UtcNow,
             Synced = false,
+            IsWeightPR = actualWeightKg > (exercise.BestWeightKgBeforeSession ?? 0),
+            IsRepPR = actualWeightKg >= (exercise.BestWeightKgBeforeSession ?? 0) && actualReps > (exercise.BestRepsAtBestWeightBeforeSession ?? 0),
         };
+
+        // Update the running baseline so a LATER, further-improving set in this same session can still
+        // show its own incremental PR badge, without re-firing for a merely-equal repeat of this one.
+        if (loggedSet.IsWeightPR)
+        {
+            exercise.BestWeightKgBeforeSession = actualWeightKg;
+        }
+        if (loggedSet.IsRepPR || loggedSet.IsWeightPR)
+        {
+            exercise.BestRepsAtBestWeightBeforeSession = Math.Max(exercise.BestRepsAtBestWeightBeforeSession ?? 0, actualReps);
+        }
 
         // Optimistic local update first — the UI must reflect the logged set regardless of connectivity.
         exercise.LoggedSets.Add(loggedSet);
+        logPulseCount++;
 
         var request = new LogSetRequest(exercise.ExerciseId, setNumber, actualReps, actualWeightKg);
         try
@@ -257,6 +300,35 @@ else
 
         await SaveStateAsync(state);
         StartRestTimer(exercise.RestSeconds);
+    }
+
+    // Lazily fetches the exercise's history-so-far (M-7.3's existing endpoint, no new backend needed) once
+    // per exercise per session, so mid-session PR badges compare against real all-time bests, not just
+    // sets logged earlier in this same workout.
+    private async Task EnsureProgressBaselineAsync(ActiveWorkoutExercise exercise)
+    {
+        if (exercise.ProgressBaselineLoaded)
+        {
+            return;
+        }
+
+        exercise.ProgressBaselineLoaded = true;
+        try
+        {
+            var points = await Api.GetAsync<List<ExerciseProgressPoint>>($"api/exercises/{exercise.ExerciseId}/progress");
+            if (points is { Count: > 0 })
+            {
+                var bestWeight = points.Max(p => p.BestSetWeightKg);
+                var bestReps = points.Where(p => p.BestSetWeightKg >= bestWeight).Max(p => p.BestSetReps);
+                exercise.BestWeightKgBeforeSession = bestWeight;
+                exercise.BestRepsAtBestWeightBeforeSession = bestReps;
+            }
+        }
+        catch (ApiException)
+        {
+            // Offline or unavailable — no baseline means no PR badges for this exercise this session,
+            // which is a safe, non-blocking degradation (never invents a false PR).
+        }
     }
 
     private void StartRestTimer(int restSeconds)
@@ -366,9 +438,16 @@ else
                 pendingSyncMessage = "You're offline — this will finish syncing once you're back online.";
             }
 
+            finishedSetsLogged = state.Exercises.Sum(e => e.LoggedSets.Count);
+            finishedPrCount = state.Exercises.SelectMany(e => e.LoggedSets).Count(s => s.IsWeightPR || s.IsRepPR);
+
             restCts?.Cancel();
             await Db.ClearActiveSessionAsync();
             isCompleted = true;
+
+            // M-9.3: the end-of-workout celebration, distinct from the smaller per-set pulse above —
+            // MotionService itself skips this for prefers-reduced-motion, leaving just the summary card.
+            await Motion.BurstConfettiAsync("#E8734A", "#F2A65A", "#7FB069");
         }
         finally
         {

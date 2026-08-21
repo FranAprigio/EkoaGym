@@ -1,0 +1,74 @@
+@* Counts a number up from its previous displayed value to the new target over ~700ms (M-9.4).
+   Skips the animation and jumps straight to the value when reduced motion is preferred, or when the
+   value hasn't actually changed (e.g. a pull-to-refresh re-render with unchanged data). *@
+@inject IMotionService Motion
+@implements IDisposable
+
+<span>@displayValue.ToString(Format)</span>
+
+@code {
+    [Parameter] public double Value { get; set; }
+    [Parameter] public string Format { get; set; } = "0";
+    [Parameter] public int DurationMs { get; set; } = 700;
+
+    private double displayValue;
+    private double animatedFrom;
+    private double animatedTo;
+    private bool hasAnimatedOnce;
+    private CancellationTokenSource? cts;
+
+    protected override void OnParametersSet()
+    {
+        if (hasAnimatedOnce && Math.Abs(animatedTo - Value) < 0.0001)
+        {
+            return;
+        }
+
+        hasAnimatedOnce = true;
+        animatedFrom = displayValue;
+        animatedTo = Value;
+
+        cts?.Cancel();
+        var localCts = new CancellationTokenSource();
+        cts = localCts;
+        _ = AnimateAsync(localCts.Token);
+    }
+
+    private async Task AnimateAsync(CancellationToken ct)
+    {
+        if (await Motion.PrefersReducedMotionAsync())
+        {
+            displayValue = animatedTo;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        try
+        {
+            var start = DateTime.UtcNow;
+            while (!ct.IsCancellationRequested)
+            {
+                var elapsed = (DateTime.UtcNow - start).TotalMilliseconds;
+                var t = Math.Clamp(elapsed / DurationMs, 0, 1);
+                displayValue = animatedFrom + ((animatedTo - animatedFrom) * t);
+                await InvokeAsync(StateHasChanged);
+
+                if (t >= 1)
+                {
+                    break;
+                }
+
+                await Task.Delay(16, ct);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Superseded by a newer value change before this animation finished.
+        }
+    }
+
+    public void Dispose()
+    {
+        cts?.Cancel();
+    }
+}

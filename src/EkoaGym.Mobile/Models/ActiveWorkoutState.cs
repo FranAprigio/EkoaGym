@@ -22,6 +22,12 @@ public class ActiveWorkoutExercise
     public decimal WeightKg { get; set; }
     public int RestSeconds { get; set; }
     public List<LoggedSet> LoggedSets { get; set; } = [];
+
+    // M-9.3 mid-session PR detection baseline — the best weight/reps achieved BEFORE this session
+    // (from GET api/exercises/{id}/progress, fetched once lazily), updated as this session improves on it.
+    public decimal? BestWeightKgBeforeSession { get; set; }
+    public int? BestRepsAtBestWeightBeforeSession { get; set; }
+    public bool ProgressBaselineLoaded { get; set; }
 }
 
 public class LoggedSet
@@ -33,4 +39,9 @@ public class LoggedSet
 
     // False while this set's POST api/sessions/{id}/sets call is still queued offline.
     public bool Synced { get; set; }
+
+    // M-9.3: mirrors the server's isWeightPR/isRepPR semantics (M-7.3) client-side, computed against
+    // ActiveWorkoutExercise's "before session" baseline at the moment this set was logged.
+    public bool IsWeightPR { get; set; }
+    public bool IsRepPR { get; set; }
 }

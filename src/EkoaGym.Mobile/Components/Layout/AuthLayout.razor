@@ -1,9 +1,31 @@
 @* Layout for unauthenticated screens (Login/Register) — no tab bar, just a centered card. *@
 @inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@implements IDisposable
 
 <div class="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-text-primary">
     <div class="mb-8 text-2xl font-bold text-primary">EkoaGym</div>
-    <div class="w-full max-w-sm">
+    <div @key="transitionKey" class="w-full max-w-sm animate-fade-in-up">
         @Body
     </div>
 </div>
+
+@code {
+    private string transitionKey = Guid.NewGuid().ToString();
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        transitionKey = Guid.NewGuid().ToString();
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}

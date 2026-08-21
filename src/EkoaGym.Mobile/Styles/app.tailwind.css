@@ -40,11 +40,24 @@
   }
 }
 
+/* M-9.*: every transition/animation in the app is CSS-driven so this single override (plus the JS-side
+   check in motion.js for the confetti/count-up cases) is enough to satisfy "respects prefers-reduced-motion"
+   everywhere at once, instead of hunting down every individual animated element. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer components {
   /* Buttons */
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium
-           transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+           transition duration-150 ease-app active:scale-95 hover:brightness-95
+           disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
     @apply btn bg-primary text-white hover:opacity-90;
@@ -64,7 +77,8 @@
 
   /* Cards */
   .card {
-    @apply rounded-xl border bg-surface p-4 shadow-sm;
+    @apply rounded-xl border bg-surface p-4 shadow-sm
+           transition-transform duration-150 ease-app active:scale-95;
   }
 
   /* Inputs & labels */

@@ -2,6 +2,7 @@
 using EkoaGym.Mobile.Services.Auth;
 using EkoaGym.Mobile.Services.Connectivity;
 using EkoaGym.Mobile.Services.Data;
+using EkoaGym.Mobile.Services.Motion;
 using EkoaGym.Mobile.Services.Notifications;
 using Maui.Biometric;
 using Microsoft.Extensions.Logging;
@@ -36,6 +37,7 @@ public static class MauiProgram
 		builder.Services.AddSingleton<LocalDatabaseService>();
 		builder.Services.AddSingleton<ISyncService, SyncService>();
 		builder.Services.AddSingleton<IRestTimerNotifier, RestTimerNotifier>();
+		builder.Services.AddSingleton<IMotionService, MotionService>();
 
 		// Typed API client — carries the bearer token and retries once on 401 via AuthDelegatingHandler.
 		builder.Services
