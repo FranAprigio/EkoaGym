@@ -85,6 +85,9 @@ namespace EkoaGym.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal>("IntensityFactor")
+                        .HasColumnType("decimal(3,2)");
+
                     b.Property<string>("MuscleGroup")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -119,6 +122,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Barbell",
                             ImageUrl = "/uploads/exercises/barbell-bench-press.gif",
                             InstructionText = "Lie on a flat bench, lower the bar to mid-chest with control, then press it back up to full arm extension.",
+                            IntensityFactor = 1.2m,
                             MuscleGroup = "Chest",
                             Name = "Barbell Bench Press",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -131,6 +135,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Dumbbell",
                             ImageUrl = "/uploads/exercises/incline-dumbbell-press.gif",
                             InstructionText = "On an inclined bench, press two dumbbells from shoulder height to full extension, targeting the upper chest.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Chest",
                             Name = "Incline Dumbbell Press",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -143,6 +148,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Bodyweight",
                             ImageUrl = "/uploads/exercises/push-up.gif",
                             InstructionText = "Keep your body in a straight line and lower your chest to the floor, then push back up to full arm extension.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Chest",
                             Name = "Push-Up",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -155,6 +161,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Cable",
                             ImageUrl = "/uploads/exercises/cable-chest-fly.gif",
                             InstructionText = "With cables set at chest height, bring the handles together in front of you with a slight bend in the elbows.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Chest",
                             Name = "Cable Chest Fly",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -167,6 +174,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Barbell",
                             ImageUrl = "/uploads/exercises/deadlift.gif",
                             InstructionText = "Hinge at the hips to grip the bar, then drive through the floor to stand tall, keeping the bar close to your body.",
+                            IntensityFactor = 1.2m,
                             MuscleGroup = "Back",
                             Name = "Deadlift",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -179,6 +187,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "PullUpBar",
                             ImageUrl = "/uploads/exercises/pull-up.gif",
                             InstructionText = "Hang from a bar with palms facing away, then pull your chin above the bar and lower back down with control.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Back",
                             Name = "Pull-Up",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -191,6 +200,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Barbell",
                             ImageUrl = "/uploads/exercises/bent-over-barbell-row.gif",
                             InstructionText = "Hinge forward with a flat back and row the bar toward your lower ribs, squeezing your shoulder blades together.",
+                            IntensityFactor = 1.2m,
                             MuscleGroup = "Back",
                             Name = "Bent-Over Barbell Row",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -203,6 +213,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Machine",
                             ImageUrl = "/uploads/exercises/lat-pulldown.gif",
                             InstructionText = "Pull the bar down to upper chest level while keeping your torso upright, then control it back to full extension.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Back",
                             Name = "Lat Pulldown",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -215,6 +226,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Barbell",
                             ImageUrl = "/uploads/exercises/overhead-barbell-press.gif",
                             InstructionText = "Press the bar from shoulder height straight overhead until your arms are fully extended, then lower with control.",
+                            IntensityFactor = 1.2m,
                             MuscleGroup = "Shoulders",
                             Name = "Overhead Barbell Press",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -227,6 +239,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Dumbbell",
                             ImageUrl = "/uploads/exercises/dumbbell-lateral-raise.gif",
                             InstructionText = "Raise two dumbbells out to the sides until arms are roughly parallel to the floor, then lower slowly.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Shoulders",
                             Name = "Dumbbell Lateral Raise",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -239,6 +252,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Cable",
                             ImageUrl = "/uploads/exercises/face-pull.gif",
                             InstructionText = "Pull a rope attachment toward your face at eye height, flaring your elbows out to target the rear delts.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Shoulders",
                             Name = "Face Pull",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -251,6 +265,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Dumbbell",
                             ImageUrl = "/uploads/exercises/arnold-press.gif",
                             InstructionText = "Start with palms facing you at shoulder height, rotate outward while pressing the dumbbells overhead.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Shoulders",
                             Name = "Arnold Press",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -263,6 +278,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Barbell",
                             ImageUrl = "/uploads/exercises/barbell-curl.gif",
                             InstructionText = "Curl the bar from thigh height to shoulder height, keeping elbows fixed at your sides throughout.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Biceps",
                             Name = "Barbell Curl",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -275,6 +291,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Dumbbell",
                             ImageUrl = "/uploads/exercises/dumbbell-hammer-curl.gif",
                             InstructionText = "Curl dumbbells with palms facing each other throughout the movement to emphasize the brachialis.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Biceps",
                             Name = "Dumbbell Hammer Curl",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -287,6 +304,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Cable",
                             ImageUrl = "/uploads/exercises/cable-curl.gif",
                             InstructionText = "Using a straight bar attachment, curl the cable up to shoulder height while keeping elbows stationary.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Biceps",
                             Name = "Cable Curl",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -299,6 +317,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Bodyweight",
                             ImageUrl = "/uploads/exercises/triceps-dip.gif",
                             InstructionText = "Lower your body between parallel bars until elbows reach roughly 90 degrees, then press back up.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Triceps",
                             Name = "Triceps Dip",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -311,6 +330,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Cable",
                             ImageUrl = "/uploads/exercises/cable-triceps-pushdown.gif",
                             InstructionText = "Push a bar or rope attachment down until arms are fully extended, keeping elbows tucked at your sides.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Triceps",
                             Name = "Cable Triceps Pushdown",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -323,6 +343,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Barbell",
                             ImageUrl = "/uploads/exercises/skull-crusher.gif",
                             InstructionText = "Lying on a bench, lower the bar toward your forehead by bending only at the elbows, then extend back up.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Triceps",
                             Name = "Skull Crusher",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -335,6 +356,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Dumbbell",
                             ImageUrl = "/uploads/exercises/wrist-curl.gif",
                             InstructionText = "Resting forearms on your thighs or a bench, curl the dumbbell upward using only your wrists.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Forearms",
                             Name = "Wrist Curl",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -347,6 +369,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Dumbbell",
                             ImageUrl = "/uploads/exercises/farmers-carry.gif",
                             InstructionText = "Carry a heavy dumbbell or kettlebell in each hand for a set distance while keeping your posture upright.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Forearms",
                             Name = "Farmer's Carry",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -359,6 +382,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Bodyweight",
                             ImageUrl = "/uploads/exercises/plank.gif",
                             InstructionText = "Hold a straight-line position on your forearms and toes, keeping your core braced and hips level.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Abs",
                             Name = "Plank",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -371,6 +395,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "PullUpBar",
                             ImageUrl = "/uploads/exercises/hanging-leg-raise.gif",
                             InstructionText = "Hang from a bar and raise your legs to hip height or higher without swinging, then lower with control.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Abs",
                             Name = "Hanging Leg Raise",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -383,6 +408,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Cable",
                             ImageUrl = "/uploads/exercises/cable-crunch.gif",
                             InstructionText = "Kneeling below a high cable, crunch your torso down toward your knees by flexing the abs, not the hips.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Abs",
                             Name = "Cable Crunch",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -395,6 +421,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "MedicineBall",
                             ImageUrl = "/uploads/exercises/russian-twist.gif",
                             InstructionText = "Sit with knees bent and torso leaned back slightly, rotating a weight from side to side across your body.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Abs",
                             Name = "Russian Twist",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -407,6 +434,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Barbell",
                             ImageUrl = "/uploads/exercises/barbell-back-squat.gif",
                             InstructionText = "With the bar racked on your upper back, squat down until thighs are at least parallel to the floor, then stand.",
+                            IntensityFactor = 1.2m,
                             MuscleGroup = "Quadriceps",
                             Name = "Barbell Back Squat",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -419,6 +447,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Machine",
                             ImageUrl = "/uploads/exercises/leg-press.gif",
                             InstructionText = "Push the platform away by extending your knees and hips, then lower it back under control.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Quadriceps",
                             Name = "Leg Press",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -431,6 +460,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Dumbbell",
                             ImageUrl = "/uploads/exercises/walking-lunge.gif",
                             InstructionText = "Step forward into a lunge, lowering the back knee toward the floor, then bring the trailing leg through to the next step.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Quadriceps",
                             Name = "Walking Lunge",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -443,6 +473,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Machine",
                             ImageUrl = "/uploads/exercises/leg-extension.gif",
                             InstructionText = "Extend your knees against the machine's resistance pad until legs are straight, then lower with control.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Quadriceps",
                             Name = "Leg Extension",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -455,6 +486,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Barbell",
                             ImageUrl = "/uploads/exercises/romanian-deadlift.gif",
                             InstructionText = "With a slight knee bend, hinge at the hips to lower the bar along your legs, feeling a stretch in the hamstrings.",
+                            IntensityFactor = 1.2m,
                             MuscleGroup = "Hamstrings",
                             Name = "Romanian Deadlift",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -467,6 +499,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Machine",
                             ImageUrl = "/uploads/exercises/leg-curl.gif",
                             InstructionText = "Curl the machine's pad toward your glutes by flexing at the knee, then lower back to the start position.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Hamstrings",
                             Name = "Leg Curl",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -479,6 +512,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Barbell",
                             ImageUrl = "/uploads/exercises/good-morning.gif",
                             InstructionText = "With the bar on your upper back, hinge forward at the hips keeping a flat back, then return to standing.",
+                            IntensityFactor = 1.2m,
                             MuscleGroup = "Hamstrings",
                             Name = "Good Morning",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -491,6 +525,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Barbell",
                             ImageUrl = "/uploads/exercises/hip-thrust.gif",
                             InstructionText = "With shoulders on a bench and the bar over your hips, drive through your heels to lift your hips to full extension.",
+                            IntensityFactor = 1.2m,
                             MuscleGroup = "Glutes",
                             Name = "Hip Thrust",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -503,6 +538,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Bodyweight",
                             ImageUrl = "/uploads/exercises/glute-bridge.gif",
                             InstructionText = "Lying on your back with knees bent, drive through your heels to raise your hips, squeezing the glutes at the top.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Glutes",
                             Name = "Glute Bridge",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -515,6 +551,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Cable",
                             ImageUrl = "/uploads/exercises/cable-kickback.gif",
                             InstructionText = "With an ankle cuff attached to a low cable, kick your leg straight back while keeping your torso stable.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Glutes",
                             Name = "Cable Kickback",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -527,6 +564,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Machine",
                             ImageUrl = "/uploads/exercises/standing-calf-raise.gif",
                             InstructionText = "Rise onto the balls of your feet as high as possible, then lower your heels below the platform for a full stretch.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Calves",
                             Name = "Standing Calf Raise",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -539,6 +577,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Machine",
                             ImageUrl = "/uploads/exercises/seated-calf-raise.gif",
                             InstructionText = "With knees bent under the pad, raise your heels by extending your ankles, then lower back down slowly.",
+                            IntensityFactor = 0.8m,
                             MuscleGroup = "Calves",
                             Name = "Seated Calf Raise",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -551,6 +590,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Kettlebell",
                             ImageUrl = "/uploads/exercises/kettlebell-swing.gif",
                             InstructionText = "Hinge at the hips to swing the kettlebell between your legs, then snap your hips forward to drive it to chest height.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "FullBody",
                             Name = "Kettlebell Swing",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -563,6 +603,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Bodyweight",
                             ImageUrl = "/uploads/exercises/burpee.gif",
                             InstructionText = "From standing, drop into a push-up, then explosively return to standing and jump, repeating in one fluid motion.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "FullBody",
                             Name = "Burpee",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -575,6 +616,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Barbell",
                             ImageUrl = "/uploads/exercises/clean-and-press.gif",
                             InstructionText = "Explosively pull the bar from the floor to your shoulders, then press it overhead to full arm extension.",
+                            IntensityFactor = 1.2m,
                             MuscleGroup = "FullBody",
                             Name = "Clean and Press",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -587,6 +629,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Other",
                             ImageUrl = "/uploads/exercises/treadmill-running.gif",
                             InstructionText = "Maintain a steady running pace on the treadmill, adjusting speed and incline to control intensity.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Cardio",
                             Name = "Treadmill Running",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -599,6 +642,7 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Machine",
                             ImageUrl = "/uploads/exercises/rowing-machine.gif",
                             InstructionText = "Drive with your legs, then lean back and pull the handle to your ribs, reversing the sequence on the return.",
+                            IntensityFactor = 1.2m,
                             MuscleGroup = "Cardio",
                             Name = "Rowing Machine",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
@@ -611,10 +655,82 @@ namespace EkoaGym.Infrastructure.Migrations
                             Equipment = "Other",
                             ImageUrl = "/uploads/exercises/jump-rope.gif",
                             InstructionText = "Turn the rope with your wrists and jump just high enough to clear it, keeping a steady, light rhythm.",
+                            IntensityFactor = 1.0m,
                             MuscleGroup = "Cardio",
                             Name = "Jump Rope",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.ExerciseLimit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ExerciseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("MaxWeightKg")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExerciseId")
+                        .IsUnique();
+
+                    b.ToTable("ExerciseLimits");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000001"),
+                            ExerciseId = new Guid("10000000-0000-0000-0000-000000000001"),
+                            MaxWeightKg = 350m
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000002"),
+                            ExerciseId = new Guid("10000000-0000-0000-0000-000000000005"),
+                            MaxWeightKg = 500m
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000003"),
+                            ExerciseId = new Guid("10000000-0000-0000-0000-000000000019"),
+                            MaxWeightKg = 500m
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000004"),
+                            ExerciseId = new Guid("10000000-0000-0000-0000-00000000000d"),
+                            MaxWeightKg = 120m
+                        });
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.FeedReaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("SessionId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("FeedReactions");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.Goal", b =>
@@ -651,6 +767,63 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Goals");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.LeagueMembership", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MovementSincePreviousWeek")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("Points")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("RoomId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("LeagueMemberships");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.LeagueRoom", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Tier")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateOnly>("WeekStartDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Tier", "WeekStartDate");
+
+                    b.ToTable("LeagueRooms");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.PasswordResetToken", b =>
@@ -748,6 +921,67 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
+            modelBuilder.Entity("EkoaGym.Domain.Entities.Report", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("ReporterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TargetUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetUserId");
+
+                    b.HasIndex("ReporterId", "CreatedAt");
+
+                    b.ToTable("Reports");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.SessionScore", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BreakdownJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ComputedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("ConsistencyBonus")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("PrBonus")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalScore")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId")
+                        .IsUnique();
+
+                    b.ToTable("SessionScores");
+                });
+
             modelBuilder.Entity("EkoaGym.Domain.Entities.SessionSetLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -766,11 +1000,19 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.Property<Guid>("ExerciseId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("IsSuspicious")
+                        .HasColumnType("bit");
+
                     b.Property<Guid>("SessionId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("SetNumber")
                         .HasColumnType("int");
+
+                    b.Property<string>("VerificationStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 
@@ -863,6 +1105,45 @@ namespace EkoaGym.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("UserProfiles");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.VerificationRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("SessionSetLogId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionSetLogId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("VerificationRequests");
                 });
 
             modelBuilder.Entity("EkoaGym.Domain.Entities.WorkoutPlan", b =>
@@ -975,6 +1256,36 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("EkoaGym.Domain.Entities.ExerciseLimit", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.Exercise", "Exercise")
+                        .WithMany()
+                        .HasForeignKey("ExerciseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Exercise");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.FeedReaction", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.WorkoutSession", "Session")
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EkoaGym.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EkoaGym.Domain.Entities.Goal", b =>
                 {
                     b.HasOne("EkoaGym.Domain.Entities.User", "User")
@@ -982,6 +1293,25 @@ namespace EkoaGym.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.LeagueMembership", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.LeagueRoom", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EkoaGym.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Room");
 
                     b.Navigation("User");
                 });
@@ -1019,6 +1349,36 @@ namespace EkoaGym.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("EkoaGym.Domain.Entities.Report", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.User", "Reporter")
+                        .WithMany()
+                        .HasForeignKey("ReporterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EkoaGym.Domain.Entities.User", "TargetUser")
+                        .WithMany()
+                        .HasForeignKey("TargetUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Reporter");
+
+                    b.Navigation("TargetUser");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.SessionScore", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.WorkoutSession", "Session")
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
             modelBuilder.Entity("EkoaGym.Domain.Entities.SessionSetLog", b =>
                 {
                     b.HasOne("EkoaGym.Domain.Entities.Exercise", "Exercise")
@@ -1045,6 +1405,25 @@ namespace EkoaGym.Infrastructure.Migrations
                         .HasForeignKey("EkoaGym.Domain.Entities.UserProfile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EkoaGym.Domain.Entities.VerificationRequest", b =>
+                {
+                    b.HasOne("EkoaGym.Domain.Entities.SessionSetLog", "SessionSetLog")
+                        .WithMany()
+                        .HasForeignKey("SessionSetLogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EkoaGym.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SessionSetLog");
 
                     b.Navigation("User");
                 });

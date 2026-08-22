@@ -1,0 +1,219 @@
+@page "/leaderboard"
+@inject ApiClient Api
+@implements IDisposable
+
+<h1 class="mb-4 text-xl font-semibold">League</h1>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <ErrorBanner Message="@errorMessage" OnRetry="LoadAsync" />
+
+    @if (league is not null)
+    {
+        @if (showMovementBanner)
+        {
+            <div class="mb-4 animate-fade-in-up rounded-lg border border-accent bg-accent/10 px-4 py-3 text-sm text-accent">
+                @(league.PreviousMovement == "Promoted" ? "🎉 You were promoted to a new tier this week!" : "You were relegated a tier this week — keep pushing!")
+            </div>
+        }
+
+        <div class="card mb-4 flex items-center justify-between">
+            <p class="font-medium">@league.Tier League</p>
+            <p class="text-sm text-text-secondary">Resets in @countdownText</p>
+        </div>
+
+        @if (podium.Count > 0)
+        {
+            <div class="mb-4 flex items-end justify-center gap-2">
+                @foreach (var member in PodiumOrder())
+                {
+                    <div class="flex flex-1 flex-col items-center gap-1 rounded-t-lg p-3 text-center text-white @PodiumColorClass(member.Rank) @PodiumHeightClass(member.Rank)">
+                        <span class="text-lg font-bold">#@member.Rank</span>
+                        <span class="text-sm">@member.Name</span>
+                        <span class="text-xs">@member.Points.ToString("0.0")</span>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="flex flex-col gap-2 pb-24">
+            @foreach (var member in rest)
+            {
+                <div class="card flex items-center justify-between @ZoneBorderClass(member.Rank)">
+                    <div class="flex items-center gap-2">
+                        <span class="w-8 text-sm font-semibold">#@member.Rank</span>
+                        <span class="@(member.IsCurrentUser ? "font-semibold" : "")">@member.Name</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-medium">@member.Points.ToString("0.0")</span>
+                        @if (!member.IsCurrentUser)
+                        {
+                            <ReportButton TargetUserId="member.UserId" />
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="fixed inset-x-0 bottom-16 z-10 border-t bg-surface px-4 py-3 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium">You: #@league.Rank</p>
+                    <p class="text-xs text-text-secondary">@league.Points.ToString("0.0") pts</p>
+                </div>
+                <p class="text-xs text-text-secondary">@gapToRivalAboveText</p>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private const string AcknowledgedMovementWeekKey = "ekoagym.league_movement_ack_week";
+
+    private bool isLoading = true;
+    private string? errorMessage;
+    private LeagueCurrent? league;
+    private List<LeagueMember> podium = [];
+    private List<LeagueMember> rest = [];
+    private bool showMovementBanner;
+    private string countdownText = string.Empty;
+    private string gapToRivalAboveText = string.Empty;
+    private CancellationTokenSource? countdownCts;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            var tzOffsetMinutes = (int)DateTimeOffset.Now.Offset.TotalMinutes;
+            league = await Api.GetAsync<LeagueCurrent>($"api/leagues/current?tzOffsetMinutes={tzOffsetMinutes}");
+            if (league is not null)
+            {
+                podium = league.Standings.Take(3).ToList();
+                rest = league.Standings.Skip(3).ToList();
+
+                var acknowledgedWeek = Microsoft.Maui.Storage.Preferences.Default.Get(AcknowledgedMovementWeekKey, string.Empty);
+                var thisWeekKey = league.WeekStartUtc.ToString("yyyy-MM-dd");
+                showMovementBanner = league.PreviousMovement != "None" && acknowledgedWeek != thisWeekKey;
+                if (showMovementBanner)
+                {
+                    Microsoft.Maui.Storage.Preferences.Default.Set(AcknowledgedMovementWeekKey, thisWeekKey);
+                }
+
+                UpdateGapToRivalAbove();
+                BeginCountdown();
+            }
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void UpdateGapToRivalAbove()
+    {
+        if (league is null || league.Rank <= 1)
+        {
+            gapToRivalAboveText = "You're in the lead!";
+            return;
+        }
+
+        var rivalAbove = league.Standings.FirstOrDefault(m => m.Rank == league.Rank - 1);
+        gapToRivalAboveText = rivalAbove is null
+            ? string.Empty
+            : $"{(rivalAbove.Points - league.Points).ToString("0.0")} pts to #{rivalAbove.Rank} ({rivalAbove.Name})";
+    }
+
+    private IEnumerable<LeagueMember> PodiumOrder()
+    {
+        // Classic podium visual order: 2nd, 1st, 3rd.
+        var byRank = podium.ToDictionary(m => m.Rank);
+        if (byRank.TryGetValue(2, out var second)) yield return second;
+        if (byRank.TryGetValue(1, out var first)) yield return first;
+        if (byRank.TryGetValue(3, out var third)) yield return third;
+    }
+
+    private static string PodiumColorClass(int rank) => rank switch
+    {
+        1 => "bg-gold",
+        2 => "bg-silver",
+        3 => "bg-bronze",
+        _ => "bg-surface"
+    };
+
+    private static string PodiumHeightClass(int rank) => rank switch
+    {
+        1 => "h-28",
+        2 => "h-20",
+        3 => "h-16",
+        _ => "h-16"
+    };
+
+    private string ZoneBorderClass(int rank)
+    {
+        if (league is null)
+        {
+            return string.Empty;
+        }
+
+        if (league.PromotionZoneSize > 0 && rank <= league.PromotionZoneSize)
+        {
+            return "border-accent";
+        }
+
+        var relegationZoneSize = Math.Min(league.RelegationZoneSize, league.Standings.Count);
+        if (relegationZoneSize > 0 && rank > league.Standings.Count - relegationZoneSize)
+        {
+            return "border-danger";
+        }
+
+        return string.Empty;
+    }
+
+    private void BeginCountdown()
+    {
+        countdownCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        countdownCts = cts;
+        _ = RunCountdownAsync(cts.Token);
+    }
+
+    private async Task RunCountdownAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested && league is not null)
+            {
+                var remaining = league.WeekEndUtc - DateTime.UtcNow;
+                countdownText = remaining <= TimeSpan.Zero
+                    ? "soon"
+                    : remaining.TotalDays >= 1
+                        ? $"{(int)remaining.TotalDays}d {remaining.Hours}h"
+                        : $"{remaining.Hours}h {remaining.Minutes}m";
+
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(TimeSpan.FromMinutes(1), ct);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Page navigated away from — nothing to do.
+        }
+    }
+
+    public void Dispose()
+    {
+        countdownCts?.Cancel();
+    }
+}

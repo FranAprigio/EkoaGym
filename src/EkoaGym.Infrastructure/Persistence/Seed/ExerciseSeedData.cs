@@ -119,8 +119,28 @@ public static class ExerciseSeedData
         ImageUrl = $"/uploads/exercises/{Slugify(name)}.gif",
         InstructionText = instructionText,
         CreatedAt = SeededAt,
-        UpdatedAt = SeededAt
+        UpdatedAt = SeededAt,
+        IntensityFactor = DefaultIntensityFactor(name)
     };
+
+    // M-10.2: heavy compound barbell lifts score at 1.2x, small-muscle isolation/accessory work at
+    // 0.8x, everything else (bodyweight compounds, cardio, core) at the 1.0x default.
+    private static decimal DefaultIntensityFactor(string name)
+    {
+        string[] isolationKeywords = ["Curl", "Raise", "Fly", "Pushdown", "Kickback", "Extension", "Face Pull", "Skull Crusher"];
+        if (isolationKeywords.Any(k => name.Contains(k, StringComparison.OrdinalIgnoreCase)))
+        {
+            return 0.8m;
+        }
+
+        string[] compoundKeywords = ["Bench Press", "Deadlift", "Squat", "Overhead", "Row", "Hip Thrust", "Clean and Press", "Good Morning"];
+        if (compoundKeywords.Any(k => name.Contains(k, StringComparison.OrdinalIgnoreCase)))
+        {
+            return 1.2m;
+        }
+
+        return 1.0m;
+    }
 
     private static string Slugify(string name) => name.ToLowerInvariant().Replace(" ", "-").Replace("'", "");
 }

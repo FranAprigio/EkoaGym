@@ -13,4 +13,8 @@ public class Exercise
     public string InstructionText { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    // M-10.2: relative-tonnage scoring multiplier (1.2 compound / 1.0 default / 0.8 isolation) — data
+    // driven from here, never hardcoded client-side.
+    public decimal IntensityFactor { get; set; } = 1.0m;
 }

@@ -17,6 +17,13 @@ public interface ISyncService
 
     Task<SessionSummary?> GetLastSessionAsync(CancellationToken ct = default);
 
+    // Server-tunable per-exercise weight caps (M-10.3) — cached locally the same way as the exercise
+    // library itself, so client-side validation still works offline.
+    Task<IReadOnlyList<ExerciseLimitInfo>> GetExerciseLimitsAsync(CancellationToken ct = default);
+
+    // M-10.6: falls back to the last-cached page (page 1 only) when offline.
+    Task<PagedResult<FeedCard>> GetFeedAsync(int page, int pageSize, CancellationToken ct = default);
+
     // Queues a write (e.g. logging a set) made while offline, to be replayed once connectivity returns.
     Task QueueWriteAsync(HttpMethod method, string requestUri, object? body, CancellationToken ct = default);
 

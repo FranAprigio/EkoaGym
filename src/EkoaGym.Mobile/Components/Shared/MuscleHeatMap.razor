@@ -1,0 +1,51 @@
+@* 2D muscle-group heat map (M-10.6) — a simplified schematic body diagram (not a literal photo/anatomy
+   render or a static image); per-region fill opacity is driven entirely by the volume data passed in. *@
+@using System.Globalization
+
+<svg viewBox="0 0 100 200" class="mx-auto h-40 w-24">
+    @foreach (var region in Regions)
+    {
+        var (cssClass, style) = GetRegionVisual(region.MuscleGroup);
+        <rect x="@region.X" y="@region.Y" width="@region.Width" height="@region.Height" rx="4" class="@cssClass" style="@style" />
+    }
+</svg>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<MuscleGroupVolume> Volumes { get; set; } = [];
+
+    private readonly record struct Region(string MuscleGroup, double X, double Y, double Width, double Height);
+
+    private static readonly Region[] Regions =
+    [
+        new("Shoulders", 8, 18, 18, 10), new("Shoulders", 74, 18, 18, 10),
+        new("Chest", 30, 26, 40, 22),
+        new("Back", 30, 50, 40, 18),
+        new("Biceps", 4, 30, 18, 24), new("Biceps", 78, 30, 18, 24),
+        new("Triceps", 4, 56, 18, 16), new("Triceps", 78, 56, 18, 16),
+        new("Forearms", 4, 74, 16, 20), new("Forearms", 80, 74, 16, 20),
+        new("Abs", 34, 70, 32, 26),
+        new("Glutes", 34, 98, 32, 14),
+        new("Quadriceps", 26, 114, 20, 34), new("Quadriceps", 54, 114, 20, 34),
+        new("Calves", 26, 150, 20, 30), new("Calves", 54, 150, 20, 30),
+    ];
+
+    private decimal MaxVolume => Volumes.Count == 0 ? 0 : Volumes.Max(v => v.VolumeKg);
+
+    private decimal? VolumeFor(string muscleGroup) => Volumes.FirstOrDefault(v => v.MuscleGroup == muscleGroup)?.VolumeKg;
+
+    // Low intensity fades toward the neutral/unused look; high intensity reads as a strong primary fill —
+    // reuses the app's existing success/primary palette rather than introducing an unrelated color scale.
+    private (string CssClass, string Style) GetRegionVisual(string muscleGroup)
+    {
+        var volume = VolumeFor(muscleGroup);
+        if (volume is null or 0 || MaxVolume == 0)
+        {
+            return ("text-text-secondary", "fill:currentColor; opacity:0.12");
+        }
+
+        var intensity = (double)(volume.Value / MaxVolume);
+        var opacity = (0.25 + (intensity * 0.75)).ToString("F2", CultureInfo.InvariantCulture);
+        var colorClass = intensity >= 0.66 ? "text-primary" : "text-accent";
+        return (colorClass, $"fill:currentColor; opacity:{opacity}");
+    }
+}

@@ -1,6 +1,7 @@
 @page "/active-workout/{PlanId:guid}"
 @using EkoaGym.Mobile.Services.Data.Entities
 @using System.Net.Http
+@using System.Net.Http.Headers
 @using System.Text.Json
 @inject ApiClient Api
 @inject ISyncService SyncService
@@ -39,6 +40,30 @@ else if (isCompleted)
         @if (!string.IsNullOrEmpty(pendingSyncMessage))
         {
             <p class="text-xs text-text-secondary">@pendingSyncMessage</p>
+        }
+        @if (sessionScore is not null)
+        {
+            <div class="card w-full text-left">
+                <div class="mb-2 flex items-center justify-between">
+                    <p class="font-medium">League score</p>
+                    <p class="text-xl font-semibold text-primary"><CountUp Value="@((double)sessionScore.TotalScore)" Format="0.0" /></p>
+                </div>
+                @foreach (var line in sessionScore.ExerciseBreakdown)
+                {
+                    <p class="text-sm text-text-secondary">
+                        @line.ExerciseName: @line.Score.ToString("0.0")
+                        @(line.HasPendingSets ? " (some sets pending review)" : "")
+                    </p>
+                }
+                @if (sessionScore.ConsistencyBonus > 0)
+                {
+                    <p class="text-sm text-accent">+@sessionScore.ConsistencyBonus.ToString("0") Consistency bonus</p>
+                }
+                @if (sessionScore.PrBonus > 0)
+                {
+                    <p class="text-sm text-accent">+@sessionScore.PrBonus.ToString("0") PR bonus 🏆</p>
+                }
+            </div>
         }
         <button type="button" class="btn-primary w-full" @onclick='() => Navigation.NavigateTo("/my-workout")'>Back to My Workout</button>
     </div>
@@ -93,15 +118,30 @@ else
 
             @if (CurrentExercise.LoggedSets.Count > 0)
             {
-                <div class="flex flex-col gap-1">
+                <div class="flex flex-col gap-2">
                     @foreach (var set in CurrentExercise.LoggedSets)
                     {
-                        <p class="text-sm @(set.IsWeightPR || set.IsRepPR ? "font-semibold text-accent animate-pr-pop" : "text-text-secondary")">
-                            Set @set.SetNumber: @set.ActualReps reps at @set.ActualWeightKg kg
-                            @(set.Synced ? "" : "(pending sync)")
-                            @(set.IsWeightPR ? " 🏆 Weight PR" : "")
-                            @(set.IsRepPR ? " 🏆 Rep PR" : "")
-                        </p>
+                        <div>
+                            <p class="text-sm @(set.IsWeightPR || set.IsRepPR ? "font-semibold text-accent animate-pr-pop" : "text-text-secondary")">
+                                Set @set.SetNumber: @set.ActualReps reps at @set.ActualWeightKg kg
+                                @(set.Synced ? "" : "(pending sync)")
+                                @(set.IsWeightPR ? " 🏆 Weight PR" : "")
+                                @(set.IsRepPR ? " 🏆 Rep PR" : "")
+                            </p>
+                            @if (set.IsSuspicious && set.VerificationStatus == "PendingReview")
+                            {
+                                @if (set.ProofSubmitted)
+                                {
+                                    <span class="rounded-full bg-pending/20 px-2 py-0.5 text-xs font-medium text-pending">Pending review — proof submitted</span>
+                                }
+                                else
+                                {
+                                    <button type="button" class="rounded-full bg-pending/20 px-2 py-0.5 text-xs font-medium text-pending underline" @onclick="() => SubmitProofAsync(set)">
+                                        Unusually large jump — submit proof to unlock points
+                                    </button>
+                                }
+                            }
+                        </div>
                     }
                 </div>
             }
@@ -128,6 +168,15 @@ else
     }
 }
 
+@if (showWeightLimitWarning)
+{
+    <ModalOverlay OnClose="() => showWeightLimitWarning = false">
+        <p class="mb-3 font-medium">That weight looks too high</p>
+        <p class="mb-4 text-sm text-text-secondary">@weightLimitMessage</p>
+        <button type="button" class="btn-primary w-full" @onclick="() => showWeightLimitWarning = false">Got it</button>
+    </ModalOverlay>
+}
+
 @code {
     [Parameter] public Guid PlanId { get; set; }
 
@@ -148,6 +197,10 @@ else
     private int logPulseCount;
     private int finishedSetsLogged;
     private int finishedPrCount;
+    private Dictionary<Guid, decimal> exerciseLimits = [];
+    private bool showWeightLimitWarning;
+    private string weightLimitMessage = string.Empty;
+    private SessionScore? sessionScore;
 
     private ActiveWorkoutExercise? CurrentExercise => state?.Exercises.ElementAtOrDefault(state.CurrentExerciseIndex);
 
@@ -168,6 +221,9 @@ else
         errorMessage = null;
         otherActivePlanId = null;
         restCts?.Cancel();
+
+        var limits = await SyncService.GetExerciseLimitsAsync();
+        exerciseLimits = limits.ToDictionary(l => l.ExerciseId, l => l.MaxWeightKg);
 
         try
         {
@@ -258,6 +314,15 @@ else
         }
 
         var exercise = CurrentExercise;
+
+        // M-10.3: client-side check is a UX convenience only — BE-5.2 enforces the real cap server-side.
+        if (exerciseLimits.TryGetValue(exercise.ExerciseId, out var maxWeightKg) && actualWeightKg > maxWeightKg)
+        {
+            weightLimitMessage = $"{exercise.ExerciseName} has a maximum allowed weight of {maxWeightKg} kg. Please double-check your entry.";
+            showWeightLimitWarning = true;
+            return;
+        }
+
         await EnsureProgressBaselineAsync(exercise);
 
         var setNumber = exercise.LoggedSets.Count + 1;
@@ -290,16 +355,71 @@ else
         var request = new LogSetRequest(exercise.ExerciseId, setNumber, actualReps, actualWeightKg);
         try
         {
-            await Api.PostAsync($"api/sessions/{state.SessionId}/sets", request);
+            var result = await Api.PostAsync<LogSetResult>($"api/sessions/{state.SessionId}/sets", request);
+            if (result is not null)
+            {
+                loggedSet.Id = result.Id;
+                loggedSet.IsSuspicious = result.IsSuspicious;
+                loggedSet.VerificationStatus = result.VerificationStatus;
+            }
+
             loggedSet.Synced = true;
         }
-        catch (ApiException)
+        catch (ApiException ex) when (ex.ErrorCode is "network_error" or "timeout")
         {
             await SyncService.QueueWriteAsync(HttpMethod.Post, $"api/sessions/{state.SessionId}/sets", request);
+        }
+        catch (ApiException ex)
+        {
+            // A real server-side rejection (e.g. a stale cached cap) — not an offline situation, so the
+            // optimistic entry is rolled back instead of being left to sync later.
+            exercise.LoggedSets.Remove(loggedSet);
+            errorMessage = ex.Message;
         }
 
         await SaveStateAsync(state);
         StartRestTimer(exercise.RestSeconds);
+    }
+
+    // M-10.4: reuses the same MediaPicker capture/pick pattern as progress photos (M-7.2).
+    private async Task SubmitProofAsync(LoggedSet set)
+    {
+        if (set.Id is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var photos = await Microsoft.Maui.Media.MediaPicker.Default.PickPhotosAsync();
+            var file = photos.FirstOrDefault();
+            if (file is null)
+            {
+                return;
+            }
+
+            await using var stream = await file.OpenReadAsync();
+            using var content = new MultipartFormDataContent();
+            using var streamContent = new StreamContent(stream);
+            streamContent.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrEmpty(file.ContentType) ? "image/jpeg" : file.ContentType);
+            content.Add(streamContent, "File", file.FileName);
+            content.Add(new StringContent(set.Id.Value.ToString()), "SessionSetLogId");
+
+            await Api.PostMultipartAsync<VerificationResult>("api/verification/submit", content);
+            set.ProofSubmitted = true;
+            if (state is not null)
+            {
+                await SaveStateAsync(state);
+            }
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch
+        {
+            errorMessage = "Couldn't access your photos.";
+        }
     }
 
     // Lazily fetches the exercise's history-so-far (M-7.3's existing endpoint, no new backend needed) once
@@ -448,6 +568,20 @@ else
             // M-9.3: the end-of-workout celebration, distinct from the smaller per-set pulse above —
             // MotionService itself skips this for prefers-reduced-motion, leaving just the summary card.
             await Motion.BurstConfettiAsync("#E8734A", "#F2A65A", "#7FB069");
+
+            // M-10.2: only meaningful once the session is actually completed server-side — silently
+            // skipped if we're offline (pendingSyncMessage above already explains that to the user).
+            if (pendingSyncMessage is null)
+            {
+                try
+                {
+                    sessionScore = await Api.GetAsync<SessionScore>($"api/sessions/{state.SessionId}/score");
+                }
+                catch (ApiException)
+                {
+                    sessionScore = null;
+                }
+            }
         }
         finally
         {
