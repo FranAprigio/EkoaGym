@@ -22,6 +22,10 @@ module.exports = {
         surface: "rgb(var(--color-surface) / <alpha-value>)",
         "text-primary": "rgb(var(--color-text-primary) / <alpha-value>)",
         "text-secondary": "rgb(var(--color-text-secondary) / <alpha-value>)",
+        gold: "rgb(var(--color-gold) / <alpha-value>)",
+        silver: "rgb(var(--color-silver) / <alpha-value>)",
+        bronze: "rgb(var(--color-bronze) / <alpha-value>)",
+        pending: "rgb(var(--color-pending) / <alpha-value>)",
       },
       borderColor: {
         DEFAULT: "rgb(var(--color-border) / <alpha-value>)",

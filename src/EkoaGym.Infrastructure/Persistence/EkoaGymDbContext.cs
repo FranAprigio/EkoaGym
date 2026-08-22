@@ -19,6 +19,13 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
     public DbSet<SessionSetLog> SessionSetLogs => Set<SessionSetLog>();
     public DbSet<BodyMetricLog> BodyMetricLogs => Set<BodyMetricLog>();
     public DbSet<ProgressPhoto> ProgressPhotos => Set<ProgressPhoto>();
+    public DbSet<LeagueRoom> LeagueRooms => Set<LeagueRoom>();
+    public DbSet<LeagueMembership> LeagueMemberships => Set<LeagueMembership>();
+    public DbSet<SessionScore> SessionScores => Set<SessionScore>();
+    public DbSet<ExerciseLimit> ExerciseLimits => Set<ExerciseLimit>();
+    public DbSet<VerificationRequest> VerificationRequests => Set<VerificationRequest>();
+    public DbSet<Report> Reports => Set<Report>();
+    public DbSet<FeedReaction> FeedReactions => Set<FeedReaction>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -97,6 +104,7 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
             entity.Property(e => e.Equipment).HasConversion<string>().HasMaxLength(30);
             entity.Property(e => e.Difficulty).HasConversion<string>().HasMaxLength(20);
             entity.Property(e => e.InstructionText).IsRequired();
+            entity.Property(e => e.IntensityFactor).HasColumnType("decimal(3,2)");
             entity.HasIndex(e => e.MuscleGroup);
             entity.HasIndex(e => e.Equipment);
             entity.HasIndex(e => e.Difficulty);
@@ -158,6 +166,7 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
                 .WithMany()
                 .HasForeignKey(s => s.ExerciseId)
                 .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(s => s.VerificationStatus).HasConversion<string>().HasMaxLength(20);
         });
 
         modelBuilder.Entity<BodyMetricLog>(entity =>
@@ -184,6 +193,107 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
                 .WithMany()
                 .HasForeignKey(p => p.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<LeagueRoom>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.Tier).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(r => new { r.Tier, r.WeekStartDate });
+        });
+
+        modelBuilder.Entity<LeagueMembership>(entity =>
+        {
+            entity.HasKey(m => m.Id);
+            entity.Property(m => m.Points).HasColumnType("decimal(10,2)");
+            entity.Property(m => m.MovementSincePreviousWeek).HasConversion<string>().HasMaxLength(20);
+            // One membership per user per room; a user's memberships across different weeks are separate rows.
+            entity.HasIndex(m => new { m.RoomId, m.UserId }).IsUnique();
+            entity.HasIndex(m => m.UserId);
+            entity.HasOne(m => m.Room)
+                .WithMany()
+                .HasForeignKey(m => m.RoomId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(m => m.User)
+                .WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SessionScore>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+            entity.Property(s => s.TotalScore).HasColumnType("decimal(10,2)");
+            entity.Property(s => s.ConsistencyBonus).HasColumnType("decimal(10,2)");
+            entity.Property(s => s.PrBonus).HasColumnType("decimal(10,2)");
+            entity.Property(s => s.BreakdownJson).IsRequired();
+            entity.HasIndex(s => s.SessionId).IsUnique();
+            entity.HasOne(s => s.Session)
+                .WithMany()
+                .HasForeignKey(s => s.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ExerciseLimit>(entity =>
+        {
+            entity.HasKey(l => l.Id);
+            entity.Property(l => l.MaxWeightKg).HasColumnType("decimal(6,2)");
+            entity.HasIndex(l => l.ExerciseId).IsUnique();
+            entity.HasOne(l => l.Exercise)
+                .WithMany()
+                .HasForeignKey(l => l.ExerciseId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasData(ExerciseLimitSeedData.All);
+        });
+
+        modelBuilder.Entity<VerificationRequest>(entity =>
+        {
+            entity.HasKey(v => v.Id);
+            entity.Property(v => v.ImageUrl).IsRequired();
+            entity.Property(v => v.ContentType).IsRequired().HasMaxLength(100);
+            entity.Property(v => v.Status).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(v => v.SessionSetLogId).IsUnique();
+            entity.HasOne(v => v.SessionSetLog)
+                .WithMany()
+                .HasForeignKey(v => v.SessionSetLogId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Restrict — avoids a second cascade path alongside User -> WorkoutSession -> SessionSetLog -> VerificationRequest.
+            entity.HasOne(v => v.User)
+                .WithMany()
+                .HasForeignKey(v => v.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Report>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.Reason).HasMaxLength(500);
+            entity.HasIndex(r => new { r.ReporterId, r.CreatedAt });
+            entity.HasOne(r => r.Reporter)
+                .WithMany()
+                .HasForeignKey(r => r.ReporterId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Restrict — a Report row already cascades via ReporterId; a second Cascade path via
+            // TargetUserId would hit the same "multiple cascade paths" SQL Server error.
+            entity.HasOne(r => r.TargetUser)
+                .WithMany()
+                .HasForeignKey(r => r.TargetUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<FeedReaction>(entity =>
+        {
+            entity.HasKey(f => f.Id);
+            entity.HasIndex(f => new { f.SessionId, f.UserId }).IsUnique();
+            entity.HasOne(f => f.Session)
+                .WithMany()
+                .HasForeignKey(f => f.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Restrict — avoids a second cascade path alongside User -> WorkoutSession -> FeedReaction.
+            entity.HasOne(f => f.User)
+                .WithMany()
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

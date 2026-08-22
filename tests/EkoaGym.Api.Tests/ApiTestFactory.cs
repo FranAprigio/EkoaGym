@@ -1,3 +1,4 @@
+using EkoaGym.Application.Auth;
 using EkoaGym.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -14,6 +15,10 @@ namespace EkoaGym.Api.Tests;
 public class ApiTestFactory : WebApplicationFactory<Program>
 {
     private readonly string _databaseName = $"api-tests-{Guid.NewGuid()}";
+
+    // Shared across every request in this factory's client(s) — lets tests read back reset tokens that
+    // would otherwise only be delivered via the real (log-only) IEmailSender implementation.
+    public TestEmailSender EmailSender { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -46,6 +51,9 @@ public class ApiTestFactory : WebApplicationFactory<Program>
                 options.UseInMemoryDatabase(_databaseName);
                 options.UseInternalServiceProvider(inMemoryProvider);
             });
+
+            services.RemoveAll<IEmailSender>();
+            services.AddSingleton<IEmailSender>(EmailSender);
         });
     }
 

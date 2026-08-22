@@ -155,6 +155,48 @@ public class SyncService : ISyncService
         }
     }
 
+    public async Task<IReadOnlyList<ExerciseLimitInfo>> GetExerciseLimitsAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var limits = await apiClient.GetAsync<List<ExerciseLimitInfo>>("api/exercises/limits", ct) ?? [];
+            await db.SaveExerciseLimitsAsync(new Entities.CachedExerciseLimits { PayloadJson = JsonSerializer.Serialize(limits, JsonOptions) });
+            return limits;
+        }
+        catch (ApiException)
+        {
+            var cached = await db.GetExerciseLimitsAsync();
+            return cached is null ? [] : JsonSerializer.Deserialize<List<ExerciseLimitInfo>>(cached.PayloadJson, JsonOptions) ?? [];
+        }
+    }
+
+    public async Task<PagedResult<FeedCard>> GetFeedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        try
+        {
+            var result = await apiClient.GetAsync<PagedResult<FeedCard>>($"api/feed?page={page}&pageSize={pageSize}", ct)
+                ?? new PagedResult<FeedCard>([], page, pageSize, 0);
+            if (page == 1)
+            {
+                await db.SaveFeedAsync(new Entities.CachedFeed { PayloadJson = JsonSerializer.Serialize(result, JsonOptions) });
+            }
+
+            return result;
+        }
+        catch (ApiException)
+        {
+            if (page != 1)
+            {
+                return new PagedResult<FeedCard>([], page, pageSize, 0);
+            }
+
+            var cached = await db.GetFeedAsync();
+            return cached is null
+                ? new PagedResult<FeedCard>([], page, pageSize, 0)
+                : JsonSerializer.Deserialize<PagedResult<FeedCard>>(cached.PayloadJson, JsonOptions)!;
+        }
+    }
+
     public Task QueueWriteAsync(HttpMethod method, string requestUri, object? body, CancellationToken ct = default) =>
         db.EnqueueWriteAsync(new OfflineWriteQueueItem
         {

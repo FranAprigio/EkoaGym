@@ -32,6 +32,9 @@ public class ActiveWorkoutExercise
 
 public class LoggedSet
 {
+    // Server-generated SessionSetLog id — null while a set is still queued offline (see M-10.4:
+    // verification submission needs this once the set has actually synced).
+    public Guid? Id { get; set; }
     public int SetNumber { get; set; }
     public int ActualReps { get; set; }
     public decimal ActualWeightKg { get; set; }
@@ -44,4 +47,13 @@ public class LoggedSet
     // ActiveWorkoutExercise's "before session" baseline at the moment this set was logged.
     public bool IsWeightPR { get; set; }
     public bool IsRepPR { get; set; }
+
+    // M-10.4: true when this set is >30% above the user's 90-day PR — league points are suspended
+    // and the user needs to submit photo/video proof.
+    public bool IsSuspicious { get; set; }
+    public string VerificationStatus { get; set; } = "None";
+
+    // Client-only — hides the "submit proof" button once the user has uploaded something, even
+    // though the server-side status stays PendingReview until a moderator resolves it.
+    public bool ProofSubmitted { get; set; }
 }

@@ -14,7 +14,7 @@ public class ExercisesEndpointsTests(ApiTestFactory factory) : IClassFixture<Api
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<PagedResultDto>();
-        Assert.Equal(42, body!.TotalCount);
+        Assert.Equal(1324, body!.TotalCount);
         Assert.Equal(5, body.Items.Count);
     }
 

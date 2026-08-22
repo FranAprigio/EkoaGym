@@ -3,6 +3,8 @@ using EkoaGym.Application.Common.Exceptions;
 using EkoaGym.Application.Plans;
 using EkoaGym.Application.Sessions;
 using EkoaGym.Domain.Entities;
+using EkoaGym.Domain.Enums;
+using EkoaGym.Infrastructure.ExerciseLimits;
 using EkoaGym.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +12,10 @@ namespace EkoaGym.Infrastructure.Sessions;
 
 public class WorkoutSessionService(EkoaGymDbContext dbContext) : IWorkoutSessionService
 {
+    // M-10.4: a set logged more than 30% above the user's own 90-day PR for that exercise gets
+    // suspended for league scoring and needs photo/video proof — the workout log itself is never lost.
+    private const decimal SuspiciousThresholdMultiplier = 1.3m;
+    private static readonly TimeSpan PrLookbackWindow = TimeSpan.FromDays(90);
     public async Task<StartSessionResponse> StartSessionAsync(Guid userId, StartSessionRequest request, CancellationToken cancellationToken = default)
     {
         var plan = await dbContext.WorkoutPlans.SingleOrDefaultAsync(p => p.Id == request.PlanId && !p.IsDeleted, cancellationToken);
@@ -61,6 +67,29 @@ public class WorkoutSessionService(EkoaGymDbContext dbContext) : IWorkoutSession
             throw new PlanExerciseNotFoundException();
         }
 
+        var exercise = await dbContext.Exercises.SingleAsync(e => e.Id == request.ExerciseId, cancellationToken);
+
+        // M-10.3: the client-side cap is a UX convenience only — this is the real security boundary.
+        var explicitCap = await dbContext.ExerciseLimits
+            .Where(l => l.ExerciseId == request.ExerciseId)
+            .Select(l => (decimal?)l.MaxWeightKg)
+            .SingleOrDefaultAsync(cancellationToken);
+        var maxWeightKg = explicitCap ?? ExerciseLimitDefaults.GetDefaultCap(exercise.MuscleGroup);
+        if (request.ActualWeightKg > maxWeightKg)
+        {
+            throw new WeightLimitExceededException(maxWeightKg);
+        }
+
+        // EF Core can't translate DateTime.Add() inside a query expression — compute the cutoff first.
+        var prLookbackCutoff = DateTime.UtcNow.Add(-PrLookbackWindow);
+        var priorMaxWeight = await dbContext.SessionSetLogs
+            .Where(l => l.ExerciseId == request.ExerciseId
+                && l.Session.UserId == userId
+                && l.SessionId != sessionId
+                && l.Session.StartedAt >= prLookbackCutoff)
+            .Select(l => (decimal?)l.ActualWeightKg)
+            .MaxAsync(cancellationToken) ?? 0m;
+        var isSuspicious = priorMaxWeight > 0 && request.ActualWeightKg > priorMaxWeight * SuspiciousThresholdMultiplier;
         var log = new SessionSetLog
         {
             Id = Guid.NewGuid(),
@@ -69,13 +98,15 @@ public class WorkoutSessionService(EkoaGymDbContext dbContext) : IWorkoutSession
             SetNumber = request.SetNumber,
             ActualReps = request.ActualReps,
             ActualWeightKg = request.ActualWeightKg,
-            CompletedAt = DateTime.UtcNow
+            CompletedAt = DateTime.UtcNow,
+            IsSuspicious = isSuspicious,
+            VerificationStatus = isSuspicious ? VerificationStatus.PendingReview : VerificationStatus.None
         };
 
         dbContext.SessionSetLogs.Add(log);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return new LogSetResponse(log.Id, log.ExerciseId, log.SetNumber, log.ActualReps, log.ActualWeightKg, log.CompletedAt);
+        return new LogSetResponse(log.Id, log.ExerciseId, log.SetNumber, log.ActualReps, log.ActualWeightKg, log.CompletedAt, log.IsSuspicious, log.VerificationStatus);
     }
 
     public async Task<CompleteSessionResponse> CompleteSessionAsync(Guid userId, Guid sessionId, CancellationToken cancellationToken = default)

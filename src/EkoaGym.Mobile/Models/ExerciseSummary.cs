@@ -6,4 +6,5 @@ public record ExerciseSummary(
     string MuscleGroup,
     string Equipment,
     string Difficulty,
-    string? ImageUrl);
+    string? ImageUrl,
+    string? GifUrl);

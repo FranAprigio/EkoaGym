@@ -24,6 +24,11 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
             SessionAlreadyCompletedException => (StatusCodes.Status409Conflict, new ApiErrorResponse("session_already_completed", exception.Message)),
             ProgressPhotoNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("progress_photo_not_found", exception.Message)),
             InvalidFileUploadException => (StatusCodes.Status400BadRequest, new ApiErrorResponse("invalid_file_upload", exception.Message)),
+            WeightLimitExceededException => (StatusCodes.Status400BadRequest, new ApiErrorResponse("weight_limit_exceeded", exception.Message)),
+            SessionNotCompletedException => (StatusCodes.Status409Conflict, new ApiErrorResponse("session_not_completed", exception.Message)),
+            SessionSetLogNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("session_set_log_not_found", exception.Message)),
+            TargetUserNotFoundException => (StatusCodes.Status404NotFound, new ApiErrorResponse("target_user_not_found", exception.Message)),
+            ReportRateLimitExceededException => (StatusCodes.Status429TooManyRequests, new ApiErrorResponse("report_rate_limit_exceeded", exception.Message)),
             _ => (StatusCodes.Status500InternalServerError, new ApiErrorResponse("internal_error", "An unexpected error occurred."))
         };
 

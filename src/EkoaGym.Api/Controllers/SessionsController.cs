@@ -1,5 +1,6 @@
 using EkoaGym.Api.Common;
 using EkoaGym.Application.Common;
+using EkoaGym.Application.Scoring;
 using EkoaGym.Application.Sessions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace EkoaGym.Api.Controllers;
 [ApiController]
 [Route("api/sessions")]
 [Authorize]
-public class SessionsController(IWorkoutSessionService sessionService) : ControllerBase
+public class SessionsController(IWorkoutSessionService sessionService, IScoringService scoringService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PagedResult<SessionSummaryResponse>>> GetAll(
@@ -49,6 +50,13 @@ public class SessionsController(IWorkoutSessionService sessionService) : Control
     public async Task<ActionResult<CompleteSessionResponse>> Complete(Guid id, CancellationToken cancellationToken)
     {
         var result = await sessionService.CompleteSessionAsync(User.GetUserId(), id, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}/score")]
+    public async Task<ActionResult<SessionScoreResponse>> GetScore(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await scoringService.GetOrComputeScoreAsync(User.GetUserId(), id, cancellationToken);
         return Ok(result);
     }
 }

@@ -30,6 +30,8 @@ public class LocalDatabaseService
                 await conn.CreateTableAsync<CachedSession>();
                 await conn.CreateTableAsync<OfflineWriteQueueItem>();
                 await conn.CreateTableAsync<CachedActiveSession>();
+                await conn.CreateTableAsync<CachedExerciseLimits>();
+                await conn.CreateTableAsync<CachedFeed>();
                 connection = conn;
             }
         }
@@ -128,6 +130,38 @@ public class LocalDatabaseService
     {
         var conn = await GetConnectionAsync();
         await conn.DeleteAllAsync<CachedActiveSession>();
+    }
+
+    public async Task<CachedExerciseLimits?> GetExerciseLimitsAsync()
+    {
+        var conn = await GetConnectionAsync();
+        return await conn.Table<CachedExerciseLimits>().FirstOrDefaultAsync();
+    }
+
+    public async Task SaveExerciseLimitsAsync(CachedExerciseLimits limits)
+    {
+        var conn = await GetConnectionAsync();
+        await conn.RunInTransactionAsync(tran =>
+        {
+            tran.DeleteAll<CachedExerciseLimits>();
+            tran.Insert(limits);
+        });
+    }
+
+    public async Task<CachedFeed?> GetFeedAsync()
+    {
+        var conn = await GetConnectionAsync();
+        return await conn.Table<CachedFeed>().FirstOrDefaultAsync();
+    }
+
+    public async Task SaveFeedAsync(CachedFeed feed)
+    {
+        var conn = await GetConnectionAsync();
+        await conn.RunInTransactionAsync(tran =>
+        {
+            tran.DeleteAll<CachedFeed>();
+            tran.Insert(feed);
+        });
     }
 
     public async Task EnqueueWriteAsync(OfflineWriteQueueItem item)

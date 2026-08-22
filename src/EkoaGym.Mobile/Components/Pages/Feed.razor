@@ -1,0 +1,131 @@
+@page "/feed"
+@inject ApiClient Api
+@inject ISyncService SyncService
+
+<h1 class="mb-4 text-xl font-semibold">Feed</h1>
+
+@if (isLoading)
+{
+    <LoadingIndicator />
+}
+else
+{
+    <ErrorBanner Message="@errorMessage" />
+
+    @if (cards.Count == 0 && errorMessage is null)
+    {
+        <EmptyState Icon="📣" Title="No activity yet" Description="Finish a workout to show up here." />
+    }
+    else
+    {
+        <div class="flex flex-col gap-4 pb-4">
+            @foreach (var card in cards)
+            {
+                <div class="card flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium">@card.UserName</p>
+                            <p class="text-xs text-text-secondary">@card.StartedAt.ToLocalTime().ToString("g")</p>
+                        </div>
+                        <ReportButton TargetUserId="card.UserId" />
+                    </div>
+
+                    <MuscleHeatMap Volumes="card.MuscleGroupVolumes" />
+
+                    <div class="flex justify-around text-sm text-text-secondary">
+                        <span>@card.TotalTonnageKg.ToString("0") kg</span>
+                        <span>@card.ActiveMinutes min</span>
+                        @if (card.HasPr)
+                        {
+                            <span class="font-semibold text-accent">🏆 PR</span>
+                        }
+                    </div>
+
+                    <button type="button"
+                            class="btn-outline relative flex items-center justify-center gap-2 @(card.ReactedByCurrentUser ? "border-primary text-primary" : "")"
+                            @onclick="() => ReactAsync(card)">
+                        @if (reactionPulseSessionId == card.SessionId)
+                        {
+                            <span @key="reactionPulseKey" class="pointer-events-none absolute inset-0 rounded-lg ring-4 ring-primary animate-success-pulse"></span>
+                        }
+                        <span class="@(reactionPulseSessionId == card.SessionId ? "animate-pr-pop" : "")">💥</span>
+                        Bater Pesos (@card.ReactionCount)
+                    </button>
+                </div>
+            }
+        </div>
+
+        @if (hasMore)
+        {
+            @if (isLoadingMore)
+            {
+                <LoadingIndicator Message="Loading more..." />
+            }
+            else
+            {
+                <button type="button" class="btn-outline w-full" @onclick="LoadMoreAsync">Load more</button>
+            }
+        }
+    }
+}
+
+@code {
+    private const int PageSize = 10;
+
+    private bool isLoading = true;
+    private bool isLoadingMore;
+    private string? errorMessage;
+    private List<FeedCard> cards = [];
+    private int currentPage = 1;
+    private bool hasMore;
+    private Guid? reactionPulseSessionId;
+    private int reactionPulseKey;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        currentPage = 1;
+        var result = await SyncService.GetFeedAsync(currentPage, PageSize);
+        cards = result.Items.ToList();
+        hasMore = currentPage * PageSize < result.TotalCount;
+        isLoading = false;
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        isLoadingMore = true;
+        currentPage++;
+        var result = await SyncService.GetFeedAsync(currentPage, PageSize);
+        cards.AddRange(result.Items);
+        hasMore = currentPage * PageSize < result.TotalCount;
+        isLoadingMore = false;
+    }
+
+    private async Task ReactAsync(FeedCard card)
+    {
+        try
+        {
+            var result = await Api.PostAsync<FeedReactionResult>($"api/feed/{card.SessionId}/react");
+            if (result is null)
+            {
+                return;
+            }
+
+            var index = cards.FindIndex(c => c.SessionId == card.SessionId);
+            if (index >= 0)
+            {
+                cards[index] = card with { ReactedByCurrentUser = result.Reacted, ReactionCount = result.ReactionCount };
+            }
+
+            if (result.Reacted)
+            {
+                reactionPulseSessionId = card.SessionId;
+                reactionPulseKey++;
+            }
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}

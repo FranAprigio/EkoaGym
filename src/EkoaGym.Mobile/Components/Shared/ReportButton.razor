@@ -1,0 +1,58 @@
+@* Reusable "Report" action (M-10.5) for leaderboard rows and feed cards. *@
+@inject ApiClient Api
+
+<button type="button" class="text-xs text-text-secondary underline" @onclick="() => showModal = true">Report</button>
+
+@if (showModal)
+{
+    <ModalOverlay OnClose="() => showModal = false">
+        @if (submitted)
+        {
+            <p class="text-center text-sm text-text-secondary">Thanks, we'll take a look.</p>
+            <button type="button" class="btn-primary mt-4 w-full" @onclick="() => showModal = false">Close</button>
+        }
+        else
+        {
+            <p class="mb-3 font-medium">Report this user</p>
+            <textarea class="input mb-3" rows="3" placeholder="Reason (optional)" @bind="reason"></textarea>
+            <ErrorBanner Message="@errorMessage" />
+            @if (isSubmitting)
+            {
+                <LoadingIndicator Message="Submitting..." />
+            }
+            else
+            {
+                <button type="button" class="btn-danger w-full" @onclick="SubmitAsync">Submit report</button>
+            }
+        }
+    </ModalOverlay>
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid TargetUserId { get; set; }
+
+    private bool showModal;
+    private bool submitted;
+    private bool isSubmitting;
+    private string reason = string.Empty;
+    private string? errorMessage;
+
+    private async Task SubmitAsync()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+        try
+        {
+            await Api.PostAsync("api/reports", new CreateReportRequest(TargetUserId, string.IsNullOrWhiteSpace(reason) ? null : reason));
+            submitted = true;
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

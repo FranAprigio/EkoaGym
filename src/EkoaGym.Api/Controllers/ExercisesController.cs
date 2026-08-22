@@ -1,4 +1,5 @@
 using EkoaGym.Application.Common;
+using EkoaGym.Application.ExerciseLimits;
 using EkoaGym.Application.Exercises;
 using EkoaGym.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +10,7 @@ namespace EkoaGym.Api.Controllers;
 [ApiController]
 [Route("api/exercises")]
 [AllowAnonymous] // Shared reference data; intentionally public, no JWT required.
-public class ExercisesController(IExerciseService exerciseService) : ControllerBase
+public class ExercisesController(IExerciseService exerciseService, IExerciseLimitService exerciseLimitService) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PagedResult<ExerciseSummaryResponse>>> GetAll(
@@ -31,5 +32,12 @@ public class ExercisesController(IExerciseService exerciseService) : ControllerB
     {
         var exercise = await exerciseService.GetExerciseByIdAsync(id, cancellationToken);
         return Ok(exercise);
+    }
+
+    [HttpGet("limits")]
+    public async Task<ActionResult<IReadOnlyList<ExerciseLimitResponse>>> GetLimits(CancellationToken cancellationToken)
+    {
+        var limits = await exerciseLimitService.GetLimitsAsync(cancellationToken);
+        return Ok(limits);
     }
 }

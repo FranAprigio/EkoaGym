@@ -65,7 +65,8 @@ public class ExerciseService(EkoaGymDbContext dbContext) : IExerciseService
         exercise.MuscleGroup,
         exercise.Equipment,
         exercise.Difficulty,
-        exercise.ImageUrl);
+        exercise.ImageUrl,
+        exercise.GifUrl);
 
     private static ExerciseDetailResponse ToDetail(Exercise exercise) => new(
         exercise.Id,
@@ -74,6 +75,7 @@ public class ExerciseService(EkoaGymDbContext dbContext) : IExerciseService
         exercise.Equipment,
         exercise.Difficulty,
         exercise.ImageUrl,
+        exercise.GifUrl,
         exercise.InstructionText,
         exercise.CreatedAt,
         exercise.UpdatedAt);

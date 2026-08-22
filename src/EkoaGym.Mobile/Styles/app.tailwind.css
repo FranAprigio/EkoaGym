@@ -19,6 +19,10 @@
   --color-text-primary: 58 46 40;    /* Warm charcoal #3A2E28 */
   --color-text-secondary: 138 126 118; /* Warm gray #8A7E76 */
   --color-border: 232 221 211;       /* Soft warm border */
+  --color-gold: 212 175 55;          /* M-10.7 podium tokens */
+  --color-silver: 168 168 168;
+  --color-bronze: 176 112 61;
+  --color-pending: 217 164 65;        /* M-10.4 — distinct from both success (accent) and danger */
 }
 
 .dark {
@@ -32,6 +36,10 @@
   --color-text-primary: 255 249 243; /* Cream */
   --color-text-secondary: 184 171 161; /* Light warm gray */
   --color-border: 74 61 52;
+  --color-gold: 212 175 55;
+  --color-silver: 168 168 168;
+  --color-bronze: 176 112 61;
+  --color-pending: 217 164 65;
 }
 
 @layer base {

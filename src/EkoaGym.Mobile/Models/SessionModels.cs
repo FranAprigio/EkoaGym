@@ -4,6 +4,14 @@ public record StartSessionResult(Guid SessionId, Guid PlanId, DateTime StartedAt
 
 public record LogSetRequest(Guid ExerciseId, int SetNumber, int ActualReps, decimal ActualWeightKg);
 
-public record LogSetResult(Guid Id, Guid ExerciseId, int SetNumber, int ActualReps, decimal ActualWeightKg, DateTime CompletedAt);
+public record LogSetResult(
+    Guid Id,
+    Guid ExerciseId,
+    int SetNumber,
+    int ActualReps,
+    decimal ActualWeightKg,
+    DateTime CompletedAt,
+    bool IsSuspicious,
+    string VerificationStatus);
 
 public record CompleteSessionResult(Guid Id, DateTime StartedAt, DateTime EndedAt);

@@ -7,4 +7,5 @@ public record ExerciseDetailResponse(
     string Equipment,
     string Difficulty,
     string? ImageUrl,
+    string? GifUrl,
     string InstructionText);

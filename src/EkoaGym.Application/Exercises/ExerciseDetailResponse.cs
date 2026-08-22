@@ -9,6 +9,7 @@ public record ExerciseDetailResponse(
     Equipment Equipment,
     Difficulty Difficulty,
     string? ImageUrl,
+    string? GifUrl,
     string InstructionText,
     DateTime CreatedAt,
     DateTime UpdatedAt);
