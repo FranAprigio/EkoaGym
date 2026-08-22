@@ -10,5 +10,6 @@
     <Project Path="tests/EkoaGym.Api.Tests/EkoaGym.Api.Tests.csproj" />
     <Project Path="tests/EkoaGym.Application.Tests/EkoaGym.Application.Tests.csproj" />
     <Project Path="tests/EkoaGym.Infrastructure.Tests/EkoaGym.Infrastructure.Tests.csproj" />
+    <Project Path="tests/EkoaGym.Mobile.Tests/EkoaGym.Mobile.Tests.csproj" />
   </Folder>
 </Solution>
