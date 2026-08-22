@@ -8,4 +8,5 @@ public record ExerciseSummaryResponse(
     MuscleGroup MuscleGroup,
     Equipment Equipment,
     Difficulty Difficulty,
-    string? ImageUrl);
+    string? ImageUrl,
+    string? GifUrl);

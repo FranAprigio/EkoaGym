@@ -10,6 +10,8 @@ public class Exercise
     public Equipment Equipment { get; set; }
     public Difficulty Difficulty { get; set; }
     public string? ImageUrl { get; set; }
+    // 180x180 looping animation (Cloudinary-hosted) demonstrating the exercise; distinct from the static ImageUrl thumbnail.
+    public string? GifUrl { get; set; }
     public string InstructionText { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

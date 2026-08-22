@@ -12,4 +12,7 @@
     <Project Path="tests/EkoaGym.Infrastructure.Tests/EkoaGym.Infrastructure.Tests.csproj" />
     <Project Path="tests/EkoaGym.Mobile.Tests/EkoaGym.Mobile.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/EkoaGym.Tools.ExerciseMedia/EkoaGym.Tools.ExerciseMedia.csproj" />
+  </Folder>
 </Solution>

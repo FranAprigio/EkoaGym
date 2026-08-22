@@ -16,11 +16,12 @@ else if (errorMessage is not null)
 else if (exercise is not null)
 {
     <div class="card mb-4 flex flex-col gap-3">
-        @if (!string.IsNullOrEmpty(exercise.ImageUrl))
+        @if (!string.IsNullOrEmpty(exercise.GifUrl) || !string.IsNullOrEmpty(exercise.ImageUrl))
         {
-            <img src="@ResolveImageUrl(exercise.ImageUrl)" alt="@exercise.Name"
+            <img src="@ResolveImageUrl(exercise.GifUrl ?? exercise.ImageUrl!)" alt="@exercise.Name"
                  class="h-48 w-full rounded-lg object-cover"
                  onerror="this.style.display='none'" />
+            <p class="text-xs text-text-secondary">© Gym visual — gymvisual.com</p>
         }
 
         <div>
@@ -145,7 +146,7 @@ else if (exercise is not null)
             var match = cached.FirstOrDefault(e => e.Id == Id);
             if (match is not null)
             {
-                exercise = new ExerciseDetailResponse(match.Id, match.Name, match.MuscleGroup, match.Equipment, match.Difficulty, match.ImageUrl, string.Empty);
+                exercise = new ExerciseDetailResponse(match.Id, match.Name, match.MuscleGroup, match.Equipment, match.Difficulty, match.ImageUrl, match.GifUrl, string.Empty);
                 isOfflineFallback = true;
             }
             else
