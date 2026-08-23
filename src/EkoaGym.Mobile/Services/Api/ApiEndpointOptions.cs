@@ -26,7 +26,6 @@ public static class ApiEndpointOptions
         ServerCertificateCustomValidationCallback = (_, _, _, _) => true,
     };
 #else
-    // TODO: replace with the deployed production API URL before release.
-    public static string BaseUrl => "https://api.ekoagym.com/";
+    public static string BaseUrl => "https://ekoagym-api.victoriousglacier-a845754b.brazilsouth.azurecontainerapps.io/";
 #endif
 }

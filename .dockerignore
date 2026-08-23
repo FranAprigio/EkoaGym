@@ -3,6 +3,9 @@
 **/.vs/
 **/.vscode/
 **/*.user
+**/node_modules/
 .git/
 .env
 uploads/
+# The API Dockerfile only needs Api/Application/Infrastructure/Domain; the MAUI app is huge and irrelevant here.
+src/EkoaGym.Mobile/
