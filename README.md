@@ -160,3 +160,116 @@ None of this requires Docker or the local dev SQL Server container to be running
 - **`DateTime` losing UTC `Kind` on reload from SQL Server**: fixed via a `ConfigureConventions` value converter in `EkoaGymDbContext` forcing `DateTimeKind.Utc` on read (no migration needed — it's a CLR-side behavior change only). Regression-covered by `SessionsRegressionTests`.
 - **JWT bearer options read config too eagerly**: `Program.cs` originally captured `JwtOptions` into a plain local variable via `builder.Configuration.GetSection(...).Get<JwtOptions>()` *before* `builder.Build()`. This works in production (config is fully loaded synchronously by then) but breaks under `WebApplicationFactory`, whose test-only config overrides only apply during `Build()` — the JWT signing key ended up empty in tests. Fixed by resolving `JwtOptions` lazily via `services.AddOptions<JwtBearerOptions>(...).Configure<IOptions<JwtOptions>>(...)` instead of a pre-`Build()` snapshot.
 
+## Deployment (Azure Container Apps + Azure SQL free tier)
+
+`.github/workflows/deploy.yml` builds the existing Dockerfile, pushes it to GHCR, and updates the Container App on every push to `main`. **The Azure resources and GitHub secrets below are one-time setup you need to run yourself** (they involve billing and credentials this assistant won't create on your behalf). Nothing about the Dockerfile or app code needs to change for this — connection string and JWT settings are already read from environment variables/config, which Container Apps secrets map onto directly.
+
+### 1. Prerequisites
+
+- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) installed and `az login` completed, on a subscription with billing enabled (the SQL/Container Apps free tiers still require a valid payment method on file).
+- Admin access to the `FranAprigio/EkoaGym` GitHub repo (to add secrets) and to its GHCR packages (to set visibility).
+
+### 2. One-time Azure setup
+
+Run these from a shell with the Azure CLI. Replace `<...>` placeholders (the SQL server name and admin password must be strong/unique — the server name is globally unique across all of Azure).
+
+```bash
+# --- Variables ---
+RESOURCE_GROUP=ekoagym-rg
+LOCATION=brazilsouth
+ACA_ENV=ekoagym-env
+CONTAINER_APP=ekoagym-api
+LOG_ANALYTICS=ekoagym-logs
+SQL_SERVER=<globally-unique-name, e.g. ekoagym-sql-yourname>
+SQL_DB=EkoaGym
+SQL_ADMIN_USER=ekoagymadmin
+SQL_ADMIN_PASSWORD='<choose a strong password>'
+JWT_SIGNING_KEY='<generate a long random string, e.g. openssl rand -base64 48>'
+
+# --- Resource group ---
+az group create --name $RESOURCE_GROUP --location $LOCATION
+
+# --- Azure SQL: serverless database using the free offer ---
+az sql server create \
+  --name $SQL_SERVER --resource-group $RESOURCE_GROUP --location $LOCATION \
+  --admin-user $SQL_ADMIN_USER --admin-password "$SQL_ADMIN_PASSWORD"
+
+# "Allow Azure services to access this server" (the well-known 0.0.0.0/0.0.0.0 rule Azure recognizes specially)
+az sql server firewall-rule create \
+  --resource-group $RESOURCE_GROUP --server $SQL_SERVER \
+  --name AllowAzureServices --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0
+
+az sql db create \
+  --resource-group $RESOURCE_GROUP --server $SQL_SERVER --name $SQL_DB \
+  --edition GeneralPurpose --compute-model Serverless --family Gen5 --capacity 1 \
+  --use-free-limit --free-limit-exhaustion-behavior AutoPause
+
+# --- Container Apps environment (Consumption) ---
+az extension add --name containerapp --upgrade
+az provider register --namespace Microsoft.App
+az provider register --namespace Microsoft.OperationalInsights
+
+az monitor log-analytics workspace create --resource-group $RESOURCE_GROUP --workspace-name $LOG_ANALYTICS
+LOG_ID=$(az monitor log-analytics workspace show --resource-group $RESOURCE_GROUP --workspace-name $LOG_ANALYTICS --query customerId -o tsv)
+LOG_KEY=$(az monitor log-analytics workspace get-shared-keys --resource-group $RESOURCE_GROUP --workspace-name $LOG_ANALYTICS --query primarySharedKey -o tsv)
+
+az containerapp env create \
+  --name $ACA_ENV --resource-group $RESOURCE_GROUP --location $LOCATION \
+  --logs-workspace-id "$LOG_ID" --logs-workspace-key "$LOG_KEY"
+
+# --- Container App, started with a placeholder image (the deploy workflow swaps in the real one on first run) ---
+CONNECTION_STRING="Server=tcp:${SQL_SERVER}.database.windows.net,1433;Database=${SQL_DB};User ID=${SQL_ADMIN_USER};Password=${SQL_ADMIN_PASSWORD};Encrypt=True;TrustServerCertificate=False;"
+
+az containerapp create \
+  --name $CONTAINER_APP --resource-group $RESOURCE_GROUP --environment $ACA_ENV \
+  --image mcr.microsoft.com/dotnet/samples:aspnetapp \
+  --target-port 8080 --ingress external \
+  --min-replicas 0 --max-replicas 1 \
+  --secrets connection-string="$CONNECTION_STRING" jwt-signing-key="$JWT_SIGNING_KEY" \
+  --env-vars \
+    ASPNETCORE_ENVIRONMENT=Production \
+    ConnectionStrings__DefaultConnection=secretref:connection-string \
+    Jwt__SigningKey=secretref:jwt-signing-key \
+    Jwt__Issuer=EkoaGym Jwt__Audience=EkoaGym \
+    Jwt__AccessTokenExpiryMinutes=60 Jwt__RefreshTokenExpiryDays=30 \
+    Progression__WeightIncrementKg=2.5
+
+# Note the public URL for later (MAUI Release BaseUrl + smoke test):
+az containerapp show --name $CONTAINER_APP --resource-group $RESOURCE_GROUP --query properties.configuration.ingress.fqdn -o tsv
+```
+
+Apply migrations to the new Azure SQL database once (from your dev machine, using the same connection string built above):
+
+```powershell
+dotnet ef database update --project src/EkoaGym.Infrastructure --startup-project src/EkoaGym.Api --connection "Server=tcp:<SQL_SERVER>.database.windows.net,1433;Database=EkoaGym;User ID=<SQL_ADMIN_USER>;Password=<SQL_ADMIN_PASSWORD>;Encrypt=True;TrustServerCertificate=False;"
+```
+
+### 3. GitHub Actions secret (`AZURE_CREDENTIALS`)
+
+Create a service principal **scoped only to the resource group above** (not subscription-wide), and run this yourself — never paste the output back into a chat, since it's a live credential:
+
+```bash
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+az ad sp create-for-rbac \
+  --name "ekoagym-github-actions" \
+  --role "Container Apps Contributor" \
+  --scopes "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP" \
+  --sdk-auth
+```
+
+Copy the full JSON it prints and save it as a GitHub Actions secret named `AZURE_CREDENTIALS` (repo **Settings → Secrets and variables → Actions → New repository secret**). If your `az` version doesn't support `--sdk-auth` (deprecated in newer CLI releases), build the JSON manually from the plain command's output:
+
+```json
+{ "clientId": "...", "clientSecret": "...", "subscriptionId": "...", "tenantId": "..." }
+```
+
+GHCR needs no extra secret — the workflow authenticates with the automatically-provided `GITHUB_TOKEN`. After the first successful workflow run, make the `ekoagym-api` package **public** (package page → Package settings → Change visibility) so the Container App can pull it without additional registry credentials; otherwise, configure `az containerapp registry set` with a GitHub PAT that has `read:packages`.
+
+### 4. Budget alert
+
+The CLI syntax for consumption budgets is fiddly to get right blind — the [Azure Portal](https://portal.azure.com) (**Cost Management + Billing → Budgets → Add**) is the more reliable path: set amount to a low threshold (e.g. R$1), scope to the subscription (or the `ekoagym-rg` resource group), and add an email alert at ~80-100% of the threshold.
+
+### 5. MAUI Release build
+
+`src/EkoaGym.Mobile/Services/Api/ApiEndpointOptions.cs` has the Debug/Release split described in M-0.2. Once the Container App is created, update the `#else` (Release) branch's `BaseUrl` to the FQDN printed above (prefixed `https://`), then do a Release-configuration smoke test (login + one authenticated `GET`, e.g. `/api/profile` or `/api/exercises`) against it before calling this done.
+

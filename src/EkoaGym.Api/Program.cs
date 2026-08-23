@@ -34,6 +34,7 @@ using EkoaGym.Infrastructure.Security;
 using EkoaGym.Infrastructure.Sessions;
 using EkoaGym.Infrastructure.Verification;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -159,6 +160,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Container Apps' ingress terminates TLS and forwards plain HTTP with X-Forwarded-* headers; without this,
+// UseHttpsRedirection() sees Request.Scheme=http on every request and can redirect-loop behind the proxy.
+// The proxy's IP isn't fixed/known ahead of time, so the known-network/proxy allowlists are cleared.
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
 
 app.UseHttpsRedirection();
 
