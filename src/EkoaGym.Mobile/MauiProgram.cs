@@ -2,6 +2,7 @@
 using EkoaGym.Mobile.Services.Auth;
 using EkoaGym.Mobile.Services.Connectivity;
 using EkoaGym.Mobile.Services.Data;
+using EkoaGym.Mobile.Services.Localization;
 using EkoaGym.Mobile.Services.Motion;
 using EkoaGym.Mobile.Services.Notifications;
 using Maui.Biometric;
@@ -26,6 +27,10 @@ public static class MauiProgram
 
 		builder.Services.AddMauiBlazorWebView();
 
+		// Localization: IStringLocalizer<SharedResources> backed by SharedResources(.pt-BR).resx.
+		builder.Services.AddLocalization();
+		builder.Services.AddSingleton<ILanguagePreferenceStore, PreferencesLanguageStore>();
+		builder.Services.AddSingleton<ILanguageService, LanguageService>();
 		// Auth / token storage
 		builder.Services.AddSingleton<ITokenStore, SecureStorageTokenStore>();
 		builder.Services.AddSingleton<AuthState>();
@@ -65,6 +70,11 @@ public static class MauiProgram
 		builder.Logging.AddDebug();
 #endif
 
-		return builder.Build();
+		var app = builder.Build();
+
+		// Must run before any UI renders so the first frame already uses the right culture.
+		app.Services.GetRequiredService<ILanguageService>().Initialize();
+
+		return app;
 	}
 }

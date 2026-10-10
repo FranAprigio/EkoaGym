@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Common.Retry" xml:space="preserve"><value>Retry</value></data>
+  <data name="Common.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Common.Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Common.Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Common.Loading" xml:space="preserve"><value>Loading...</value></data>
+  <data name="Common.Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Common.UnexpectedError" xml:space="preserve"><value>Something went wrong. Please restart the app.</value></data>
+
+  <data name="Validation.Required" xml:space="preserve"><value>{0} is required.</value></data>
+  <data name="Validation.EmailAddress" xml:space="preserve"><value>Enter a valid email address.</value></data>
+  <data name="Validation.StringLength" xml:space="preserve"><value>{0} must be between {1} and {2} characters.</value></data>
+  <data name="Validation.MinLength" xml:space="preserve"><value>{0} must be at least {1} characters.</value></data>
+  <data name="Validation.MaxLength" xml:space="preserve"><value>{0} must be at most {1} characters.</value></data>
+  <data name="Validation.Range" xml:space="preserve"><value>{0} must be between {1} and {2}.</value></data>
+  <data name="Validation.Compare" xml:space="preserve"><value>{0} and {1} don't match.</value></data>
+
+  <data name="Language.Label" xml:space="preserve"><value>Language / Idioma</value></data>
+  <data name="Language.en" xml:space="preserve"><value>English</value></data>
+  <data name="Language.pt-BR" xml:space="preserve"><value>Português (Brasil)</value></data>
+
+  <data name="Plural.Set.One" xml:space="preserve"><value>{0} set</value></data>
+  <data name="Plural.Set.Other" xml:space="preserve"><value>{0} sets</value></data>
+  <data name="Plural.Rep.One" xml:space="preserve"><value>{0} rep</value></data>
+  <data name="Plural.Rep.Other" xml:space="preserve"><value>{0} reps</value></data>
+  <data name="Plural.Exercise.One" xml:space="preserve"><value>{0} exercise</value></data>
+  <data name="Plural.Exercise.Other" xml:space="preserve"><value>{0} exercises</value></data>
+  <data name="Plural.Day.One" xml:space="preserve"><value>{0} day</value></data>
+  <data name="Plural.Day.Other" xml:space="preserve"><value>{0} days</value></data>
+</root>

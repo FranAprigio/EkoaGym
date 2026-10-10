@@ -5,7 +5,9 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Web.Virtualization
 @using Microsoft.JSInterop
+@using Microsoft.Extensions.Localization
 @using EkoaGym.Mobile
+@using EkoaGym.Mobile.Resources
 @using EkoaGym.Mobile.Components
 @using EkoaGym.Mobile.Components.Layout
 @using EkoaGym.Mobile.Components.Shared
@@ -14,6 +16,8 @@
 @using EkoaGym.Mobile.Services.Auth
 @using EkoaGym.Mobile.Services.Connectivity
 @using EkoaGym.Mobile.Services.Data
+@using EkoaGym.Mobile.Services.Localization
 @using EkoaGym.Mobile.Services.Motion
 @using EkoaGym.Mobile.Services.Notifications
 @using EkoaGym.Mobile.Services.Scheduling
+@inject IStringLocalizer<SharedResources> L

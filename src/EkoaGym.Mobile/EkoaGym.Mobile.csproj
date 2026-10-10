@@ -20,6 +20,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
         <Nullable>enable</Nullable>
+        <!-- Fallback language for any key missing from a satellite resx (pt-BR). -->
+        <NeutralLanguage>en</NeutralLanguage>
 
         <!-- Enable XAML source generation for faster build times and improved performance.
              This generates C# code from XAML at compile time instead of runtime inflation.
@@ -72,6 +74,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
         <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Localization" Version="10.0.0" />
         <PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
         <PackageReference Include="Plugin.LocalNotification" Version="14.1.1" />
         <PackageReference Include="Oscore.Maui.Biometric" Version="2.5.1" />
