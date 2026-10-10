@@ -1,5 +1,6 @@
 @page "/profile-setup"
 @inject ApiClient Api
+@inject ILanguageService Language
 @inject NavigationManager Navigation
 
 <h1 class="mb-2 text-center text-xl font-semibold">Set up your profile</h1>
@@ -132,7 +133,7 @@ else
         {
             await Api.PutAsync("api/profile", new ProfileSetupRequest(
                 profileModel.Name, profileModel.DateOfBirth, profileModel.Sex, profileModel.HeightCm,
-                profileModel.CurrentWeightKg, profileModel.ActivityLevel));
+                profileModel.CurrentWeightKg, profileModel.ActivityLevel, Language.Current));
 
             var goalType = goalModel.Type == GoalTypes.Custom ? goalModel.CustomType.Trim() : goalModel.Type;
             await Api.PostAsync("api/goals", new CreateGoalRequest(goalType, goalModel.TargetValue, goalModel.TargetDate));

@@ -21,6 +21,63 @@
   <data name="Validation.Range" xml:space="preserve"><value>{0} must be between {1} and {2}.</value></data>
   <data name="Validation.Compare" xml:space="preserve"><value>{0} and {1} don't match.</value></data>
 
+  <data name="Error.email_already_in_use" xml:space="preserve"><value>That email is already registered.</value></data>
+  <data name="Error.invalid_credentials" xml:space="preserve"><value>Invalid email or password.</value></data>
+  <data name="Error.invalid_refresh_token" xml:space="preserve"><value>Your session has expired. Please log in again.</value></data>
+  <data name="Error.invalid_password_reset_token" xml:space="preserve"><value>This password reset link is invalid or has expired.</value></data>
+  <data name="Error.profile_not_found" xml:space="preserve"><value>Profile not found.</value></data>
+  <data name="Error.goal_not_found" xml:space="preserve"><value>Goal not found.</value></data>
+  <data name="Error.exercise_not_found" xml:space="preserve"><value>Exercise not found.</value></data>
+  <data name="Error.plan_not_found" xml:space="preserve"><value>Workout plan not found.</value></data>
+  <data name="Error.plan_access_denied" xml:space="preserve"><value>You don't have access to this workout plan.</value></data>
+  <data name="Error.plan_exercise_not_found" xml:space="preserve"><value>This exercise isn't part of the plan.</value></data>
+  <data name="Error.session_not_found" xml:space="preserve"><value>Workout not found.</value></data>
+  <data name="Error.session_already_completed" xml:space="preserve"><value>This workout is already finished and can't be changed.</value></data>
+  <data name="Error.progress_photo_not_found" xml:space="preserve"><value>Progress photo not found.</value></data>
+  <data name="Error.file_empty" xml:space="preserve"><value>The file is empty.</value></data>
+  <data name="Error.file_too_large" xml:space="preserve"><value>The file is too large. The limit is {0} MB.</value></data>
+  <data name="Error.image_type_not_allowed" xml:space="preserve"><value>Only JPEG, PNG or WEBP images are allowed.</value></data>
+  <data name="Error.proof_type_not_allowed" xml:space="preserve"><value>Only JPEG, PNG or WEBP images, or MP4 video, are allowed.</value></data>
+  <data name="Error.weight_limit_exceeded" xml:space="preserve"><value>This exercise has a maximum weight of {0} kg. Please double-check your entry.</value></data>
+  <data name="Error.session_not_completed" xml:space="preserve"><value>Finish the workout before viewing its score.</value></data>
+  <data name="Error.session_set_log_not_found" xml:space="preserve"><value>That set could not be found.</value></data>
+  <data name="Error.target_user_not_found" xml:space="preserve"><value>We couldn't find the user you're trying to report.</value></data>
+  <data name="Error.report_rate_limit_exceeded" xml:space="preserve"><value>You've sent too many reports recently. Please try again later.</value></data>
+  <data name="Error.internal_error" xml:space="preserve"><value>Something went wrong on our end. Please try again later.</value></data>
+  <data name="Error.network_error" xml:space="preserve"><value>Can't reach the server. Check your connection and try again.</value></data>
+  <data name="Error.timeout" xml:space="preserve"><value>The request timed out. Please try again.</value></data>
+  <data name="Error.validation_error" xml:space="preserve"><value>Some of the information is invalid. Please check it and try again.</value></data>
+  <data name="Error.http_401" xml:space="preserve"><value>Your session has expired. Please log in again.</value></data>
+  <data name="Error.http_403" xml:space="preserve"><value>You don't have permission to do that.</value></data>
+  <data name="Error.http_404" xml:space="preserve"><value>We couldn't find what you were looking for.</value></data>
+  <data name="Error.http_409" xml:space="preserve"><value>That already exists.</value></data>
+  <data name="Error.http_429" xml:space="preserve"><value>Too many attempts. Please try again later.</value></data>
+  <data name="Error.http_other" xml:space="preserve"><value>Something went wrong. Please try again.</value></data>
+
+  <data name="Error.field.required" xml:space="preserve"><value>{0} is required.</value></data>
+  <data name="Error.field.invalid_email" xml:space="preserve"><value>Enter a valid email address.</value></data>
+  <data name="Error.field.invalid_length" xml:space="preserve"><value>{0} has an invalid length.</value></data>
+  <data name="Error.field.out_of_range" xml:space="preserve"><value>{0} is outside the allowed range.</value></data>
+  <data name="Error.field.values_do_not_match" xml:space="preserve"><value>{0} doesn't match.</value></data>
+  <data name="Error.field.password_too_weak" xml:space="preserve"><value>Password must have at least 8 characters, including a letter and a number.</value></data>
+  <data name="Error.field.date_in_future" xml:space="preserve"><value>{0} can't be in the future.</value></data>
+  <data name="Error.field.date_in_past" xml:space="preserve"><value>{0} can't be in the past.</value></data>
+  <data name="Error.field.unsupported_language" xml:space="preserve"><value>That language isn't supported.</value></data>
+  <data name="Error.field.invalid" xml:space="preserve"><value>{0} is invalid.</value></data>
+
+  <data name="Field.email" xml:space="preserve"><value>Email</value></data>
+  <data name="Field.password" xml:space="preserve"><value>Password</value></data>
+  <data name="Field.name" xml:space="preserve"><value>Name</value></data>
+  <data name="Field.dateOfBirth" xml:space="preserve"><value>Date of birth</value></data>
+  <data name="Field.sex" xml:space="preserve"><value>Sex</value></data>
+  <data name="Field.heightCm" xml:space="preserve"><value>Height</value></data>
+  <data name="Field.currentWeightKg" xml:space="preserve"><value>Current weight</value></data>
+  <data name="Field.activityLevel" xml:space="preserve"><value>Activity level</value></data>
+  <data name="Field.preferredLanguage" xml:space="preserve"><value>Language</value></data>
+  <data name="Field.targetValue" xml:space="preserve"><value>Target value</value></data>
+  <data name="Field.targetDate" xml:space="preserve"><value>Target date</value></data>
+  <data name="Field.weightKg" xml:space="preserve"><value>Weight</value></data>
+
   <data name="Language.Label" xml:space="preserve"><value>Language / Idioma</value></data>
   <data name="Language.en" xml:space="preserve"><value>English</value></data>
   <data name="Language.pt-BR" xml:space="preserve"><value>Português (Brasil)</value></data>

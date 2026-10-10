@@ -9,4 +9,7 @@ public class User
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public bool IsDeleted { get; set; }
+
+    // Language for server-generated content such as emails ("en" or "pt-BR").
+    public string PreferredLanguage { get; set; } = Constants.SupportedLanguages.Default;
 }

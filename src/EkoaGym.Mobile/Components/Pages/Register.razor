@@ -3,6 +3,7 @@
 @inject ApiClient Api
 @inject ITokenStore TokenStore
 @inject AuthState AuthState
+@inject ILanguageService Language
 @inject NavigationManager Navigation
 
 <h1 class="mb-6 text-center text-xl font-semibold">Create your account</h1>
@@ -59,7 +60,7 @@
         errorMessage = null;
         try
         {
-            var response = await Api.PostAsync<AuthResponse>("api/auth/register", new RegisterRequest(model.Email, model.Password, model.Name));
+            var response = await Api.PostAsync<AuthResponse>("api/auth/register", new RegisterRequest(model.Email, model.Password, model.Name, Language.Current));
             if (response is null)
             {
                 errorMessage = "Something went wrong. Please try again.";

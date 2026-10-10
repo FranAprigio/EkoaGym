@@ -3,7 +3,10 @@
 @inject NavigationManager Navigation
 @implements IDisposable
 
-<div class="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-text-primary">
+<div class="relative flex min-h-screen flex-col items-center justify-center bg-background px-6 text-text-primary">
+    <div class="absolute right-4 top-4">
+        <LanguageSelector ShowLabel="false" />
+    </div>
     <div class="mb-8 text-2xl font-bold text-primary">EkoaGym</div>
     <div @key="transitionKey" class="w-full max-w-sm animate-fade-in-up">
         @Body

@@ -6,7 +6,7 @@ namespace EkoaGym.Application.Common.Validation;
 public class PasswordComplexityAttribute : ValidationAttribute
 {
     public PasswordComplexityAttribute()
-        : base("Password must be at least 8 characters and contain at least one letter and one digit.")
+        : base("password_too_weak")
     {
     }
 

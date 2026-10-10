@@ -1,0 +1,22 @@
+<div class="flex flex-col gap-1">
+    @if (ShowLabel)
+    {
+        <label class="label" for="language-select">@L["Language.Label"]</label>
+    }
+    <select id="language-select" class="input" aria-label="@(L["Language.Label"].Value)" @onchange="OnLanguageChanged">
+        @foreach (var languageCode in AppLanguages.All)
+        {
+            <option value="@languageCode" selected="@(languageCode == Language.Current)">@L[$"Language.{languageCode}"]</option>
+        }
+    </select>
+</div>
+
+@code {
+    [Inject] private ILanguageService Language { get; set; } = default!;
+
+    [Parameter] public bool ShowLabel { get; set; } = true;
+
+    // Switching raises Changed, which rebuilds the whole UI (see Routes.razor) and syncs the profile.
+    private void OnLanguageChanged(ChangeEventArgs e) =>
+        Language.SetLanguage(e.Value?.ToString() ?? AppLanguages.English);
+}

@@ -16,6 +16,7 @@ using EkoaGym.Application.Reports;
 using EkoaGym.Application.Scoring;
 using EkoaGym.Application.Sessions;
 using EkoaGym.Application.Verification;
+using EkoaGym.Domain.Constants;
 using EkoaGym.Domain.Entities;
 using EkoaGym.Infrastructure.BodyMetrics;
 using EkoaGym.Infrastructure.ExerciseLimits;
@@ -34,6 +35,7 @@ using EkoaGym.Infrastructure.Security;
 using EkoaGym.Infrastructure.Sessions;
 using EkoaGym.Infrastructure.Verification;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -45,7 +47,10 @@ const string MobileAppCorsPolicy = "MobileApp";
 
 // Add services to the container.
 
-builder.Services.AddControllers()
+builder.Services.AddControllers(options => options.ModelMetadataDetailsProviders.Add(new StableValidationCodesProvider()))
+    .ConfigureApiBehaviorOptions(options =>
+        options.InvalidModelStateResponseFactory = context =>
+            new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(ValidationErrorFactory.Create(context.ModelState)))
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -163,6 +168,12 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors(MobileAppCorsPolicy);
+
+// Accept-Language picks the response language (en or pt-BR); anything else falls back to English.
+app.UseRequestLocalization(new RequestLocalizationOptions()
+    .SetDefaultCulture(SupportedLanguages.Default)
+    .AddSupportedCultures(SupportedLanguages.All.ToArray())
+    .AddSupportedUICultures(SupportedLanguages.All.ToArray()));
 
 app.UseAuthentication();
 app.UseAuthorization();

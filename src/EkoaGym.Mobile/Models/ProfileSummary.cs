@@ -6,4 +6,5 @@ public record ProfileSummary(
     string Sex,
     int HeightCm,
     decimal CurrentWeightKg,
-    string ActivityLevel);
+    string ActivityLevel,
+    string? PreferredLanguage = null);

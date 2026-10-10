@@ -6,7 +6,7 @@ namespace EkoaGym.Application.Common.Validation;
 public class NotInPastAttribute : ValidationAttribute
 {
     public NotInPastAttribute()
-        : base("Date must not be in the past.")
+        : base("date_in_past")
     {
     }
 

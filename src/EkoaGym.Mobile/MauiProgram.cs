@@ -31,6 +31,7 @@ public static class MauiProgram
 		builder.Services.AddLocalization();
 		builder.Services.AddSingleton<ILanguagePreferenceStore, PreferencesLanguageStore>();
 		builder.Services.AddSingleton<ILanguageService, LanguageService>();
+		builder.Services.AddSingleton<ProfileLanguageSync>();
 		// Auth / token storage
 		builder.Services.AddSingleton<ITokenStore, SecureStorageTokenStore>();
 		builder.Services.AddSingleton<AuthState>();
@@ -74,6 +75,8 @@ public static class MauiProgram
 
 		// Must run before any UI renders so the first frame already uses the right culture.
 		app.Services.GetRequiredService<ILanguageService>().Initialize();
+		// Constructing it subscribes to language changes so the profile is updated whenever the user switches.
+		_ = app.Services.GetRequiredService<ProfileLanguageSync>();
 
 		return app;
 	}

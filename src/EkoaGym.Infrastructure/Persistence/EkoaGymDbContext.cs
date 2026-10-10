@@ -1,3 +1,4 @@
+using EkoaGym.Domain.Constants;
 using EkoaGym.Domain.Entities;
 using EkoaGym.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
@@ -45,6 +46,7 @@ public class EkoaGymDbContext(DbContextOptions<EkoaGymDbContext> options) : DbCo
             entity.Property(u => u.Email).IsRequired().HasMaxLength(256);
             entity.Property(u => u.Name).IsRequired().HasMaxLength(200);
             entity.Property(u => u.PasswordHash).IsRequired();
+            entity.Property(u => u.PreferredLanguage).IsRequired().HasMaxLength(10).HasDefaultValue(SupportedLanguages.Default);
             entity.HasIndex(u => u.Email).IsUnique();
         });
 

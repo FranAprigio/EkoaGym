@@ -8,4 +8,5 @@ public record ProfileResponse(
     Sex Sex,
     int HeightCm,
     decimal CurrentWeightKg,
-    ActivityLevel ActivityLevel);
+    ActivityLevel ActivityLevel,
+    string PreferredLanguage);

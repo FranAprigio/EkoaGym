@@ -3,6 +3,7 @@
 @inject ITokenStore TokenStore
 @inject AuthState AuthState
 @inject IBiometricLoginService BiometricLoginService
+@inject ILanguageService Language
 @inject NavigationManager Navigation
 
 <h1 class="mb-4 text-xl font-semibold">Profile</h1>
@@ -143,6 +144,10 @@ else
         }
     </EditForm>
 
+    <div class="card mb-4">
+        <LanguageSelector />
+    </div>
+
     @if (biometricAvailable)
     {
         <h2 class="mb-2 mt-2 font-medium">Security</h2>
@@ -233,7 +238,7 @@ else
         {
             await Api.PutAsync("api/profile", new ProfileSetupRequest(
                 editModel.Name, editModel.DateOfBirth, editModel.Sex, editModel.HeightCm,
-                editModel.CurrentWeightKg, editModel.ActivityLevel));
+                editModel.CurrentWeightKg, editModel.ActivityLevel, Language.Current));
             await LoadProfileAsync();
             isEditing = false;
         }

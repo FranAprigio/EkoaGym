@@ -35,17 +35,20 @@ public class VerificationService(EkoaGymDbContext dbContext, IOptions<FileStorag
 
         if (upload.Length <= 0)
         {
-            throw new InvalidFileUploadException("The uploaded file is empty.");
+            throw new InvalidFileUploadException("file_empty", "The uploaded file is empty.");
         }
 
         if (upload.Length > MaxFileSizeBytes)
         {
-            throw new InvalidFileUploadException($"The uploaded file exceeds the {MaxFileSizeBytes / (1024 * 1024)}MB limit.");
+            throw new InvalidFileUploadException(
+                "file_too_large",
+                $"The uploaded file exceeds the {MaxFileSizeBytes / (1024 * 1024)}MB limit.",
+                new Dictionary<string, object?> { ["maxMb"] = MaxFileSizeBytes / (1024 * 1024) });
         }
 
         if (!AllowedContentTypes.TryGetValue(upload.ContentType, out var extension))
         {
-            throw new InvalidFileUploadException("Only JPEG, PNG, WEBP images or MP4 video are allowed.");
+            throw new InvalidFileUploadException("proof_type_not_allowed", "Only JPEG, PNG, WEBP images or MP4 video are allowed.");
         }
 
         var verification = await dbContext.VerificationRequests

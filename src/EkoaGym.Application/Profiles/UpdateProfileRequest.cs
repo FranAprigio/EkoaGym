@@ -10,4 +10,5 @@ public record UpdateProfileRequest(
     [Required] Sex Sex,
     [Range(50, 300)] int HeightCm,
     [Range(20, 400)] decimal CurrentWeightKg,
-    [Required] ActivityLevel ActivityLevel);
+    [Required] ActivityLevel ActivityLevel,
+    [SupportedLanguage] string? PreferredLanguage = null);

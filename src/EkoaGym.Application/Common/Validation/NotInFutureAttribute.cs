@@ -6,7 +6,7 @@ namespace EkoaGym.Application.Common.Validation;
 public class NotInFutureAttribute : ValidationAttribute
 {
     public NotInFutureAttribute()
-        : base("Date must not be in the future.")
+        : base("date_in_future")
     {
     }
 

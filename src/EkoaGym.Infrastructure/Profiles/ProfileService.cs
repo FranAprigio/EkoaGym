@@ -1,5 +1,6 @@
 using EkoaGym.Application.Common.Exceptions;
 using EkoaGym.Application.Profiles;
+using EkoaGym.Domain.Constants;
 using EkoaGym.Domain.Entities;
 using EkoaGym.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ public class ProfileService(EkoaGymDbContext dbContext) : IProfileService
             throw new ProfileNotFoundException();
         }
 
-        return ToResponse(profile);
+        return ToResponse(profile, await GetLanguageAsync(userId, cancellationToken));
     }
 
     public async Task<ProfileResponse> UpdateProfileAsync(Guid userId, UpdateProfileRequest request, CancellationToken cancellationToken = default)
@@ -37,16 +38,27 @@ public class ProfileService(EkoaGymDbContext dbContext) : IProfileService
         profile.ActivityLevel = request.ActivityLevel;
         profile.UpdatedAt = DateTime.UtcNow;
 
+        var user = await dbContext.Users.SingleAsync(u => u.Id == userId, cancellationToken);
+        if (SupportedLanguages.Normalize(request.PreferredLanguage) is { } language)
+        {
+            user.PreferredLanguage = language;
+            user.UpdatedAt = DateTime.UtcNow;
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return ToResponse(profile);
+        return ToResponse(profile, user.PreferredLanguage);
     }
 
-    private static ProfileResponse ToResponse(UserProfile profile) => new(
+    private async Task<string> GetLanguageAsync(Guid userId, CancellationToken cancellationToken) =>
+        await dbContext.Users.Where(u => u.Id == userId).Select(u => u.PreferredLanguage).SingleAsync(cancellationToken);
+
+    private static ProfileResponse ToResponse(UserProfile profile, string preferredLanguage) => new(
         profile.Name,
         profile.DateOfBirth,
         profile.Sex,
         profile.HeightCm,
         profile.CurrentWeightKg,
-        profile.ActivityLevel);
+        profile.ActivityLevel,
+        preferredLanguage);
 }

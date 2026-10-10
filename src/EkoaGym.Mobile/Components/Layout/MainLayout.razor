@@ -3,6 +3,7 @@
 @inject ITokenStore TokenStore
 @inject AuthState AuthState
 @inject IBiometricLoginService BiometricLoginService
+@inject ProfileLanguageSync LanguageSync
 @inject NavigationManager Navigation
 @implements IDisposable
 
@@ -100,6 +101,7 @@
         // refresh also fails it raises AuthenticationExpired, which OnAuthenticationExpired below
         // catches to clear tokens and send the user back to Login.
         await SyncService.RefreshAsync();
+        await LanguageSync.SyncAsync();
     }
 
     private void OnAuthenticationExpired()

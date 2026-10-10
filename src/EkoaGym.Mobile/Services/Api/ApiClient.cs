@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace EkoaGym.Mobile.Services.Api;
 
 // Centralizes every HTTP call + error handling so pages never touch HttpClient directly.
-public class ApiClient(HttpClient httpClient)
+public class ApiClient(HttpClient httpClient, IApiErrorMessageProvider errorMessages)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -56,7 +56,7 @@ public class ApiClient(HttpClient httpClient)
         using var response = await SendCoreAsync(send);
     }
 
-    private static async Task<HttpResponseMessage> SendCoreAsync(Func<Task<HttpResponseMessage>> send)
+    private async Task<HttpResponseMessage> SendCoreAsync(Func<Task<HttpResponseMessage>> send)
     {
         HttpResponseMessage response;
         try
@@ -65,11 +65,11 @@ public class ApiClient(HttpClient httpClient)
         }
         catch (HttpRequestException)
         {
-            throw new ApiException("Can't reach the server. Check your connection and try again.", null, "network_error");
+            throw Fail(new ApiErrorInfo(null, "network_error"));
         }
         catch (TaskCanceledException)
         {
-            throw new ApiException("The request timed out. Please try again.", null, "timeout");
+            throw Fail(new ApiErrorInfo(null, "timeout"));
         }
 
         if (response.IsSuccessStatusCode)
@@ -77,47 +77,58 @@ public class ApiClient(HttpClient httpClient)
             return response;
         }
 
-        string? friendlyMessage = null;
+        var statusCode = (int)response.StatusCode;
         string? code = null;
+        var args = new Dictionary<string, JsonElement>();
+        var fieldErrors = new List<ApiFieldError>();
         try
         {
             using var stream = await response.Content.ReadAsStreamAsync();
             using var document = await JsonDocument.ParseAsync(stream);
             var root = document.RootElement;
 
-            // Custom Application exceptions use {code, message} (see GlobalExceptionHandler).
-            if (root.TryGetProperty("message", out var messageProp) && messageProp.ValueKind == JsonValueKind.String)
+            // {code, message, args?, fieldErrors?} from GlobalExceptionHandler / the validation factory.
+            // The server's English "message" is deliberately ignored: only the stable code is shown to the user.
+            if (root.TryGetProperty("code", out var codeProp) && codeProp.ValueKind == JsonValueKind.String)
             {
-                friendlyMessage = messageProp.GetString();
-                code = root.TryGetProperty("code", out var codeProp) ? codeProp.GetString() : null;
+                code = codeProp.GetString();
             }
-            // [ApiController] automatic model validation uses ValidationProblemDetails: {errors: {field: [msg,...]}}.
             else if (root.TryGetProperty("errors", out var errorsProp) && errorsProp.ValueKind == JsonValueKind.Object)
             {
-                var messages = errorsProp.EnumerateObject()
-                    .SelectMany(field => field.Value.EnumerateArray().Select(m => m.GetString()))
-                    .Where(m => !string.IsNullOrWhiteSpace(m));
-                friendlyMessage = string.Join(" ", messages);
+                // [ApiController] default ValidationProblemDetails from an older server build.
                 code = "validation_error";
+            }
+
+            if (root.TryGetProperty("args", out var argsProp) && argsProp.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var arg in argsProp.EnumerateObject())
+                {
+                    args[arg.Name] = arg.Value.Clone();
+                }
+            }
+
+            if (root.TryGetProperty("fieldErrors", out var fieldErrorsProp) && fieldErrorsProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in fieldErrorsProp.EnumerateArray())
+                {
+                    var field = item.TryGetProperty("field", out var f) ? f.GetString() : null;
+                    var fieldCode = item.TryGetProperty("code", out var c) ? c.GetString() : null;
+                    if (field is not null && fieldCode is not null)
+                    {
+                        fieldErrors.Add(new ApiFieldError(field, fieldCode));
+                    }
+                }
             }
         }
         catch
         {
-            // Response body wasn't valid JSON at all — fall back to a generic message below.
+            // Response body wasn't valid JSON at all — the status code alone picks the message below.
         }
 
-        friendlyMessage = string.IsNullOrWhiteSpace(friendlyMessage) ? null : friendlyMessage;
-        friendlyMessage ??= response.StatusCode switch
-        {
-            HttpStatusCode.Unauthorized => "Your session has expired. Please log in again.",
-            HttpStatusCode.Forbidden => "You don't have permission to do that.",
-            HttpStatusCode.NotFound => "We couldn't find what you were looking for.",
-            HttpStatusCode.Conflict => "That already exists.",
-            _ when (int)response.StatusCode >= 500 => "Something went wrong on our end. Please try again later.",
-            _ => "Something went wrong. Please try again.",
-        };
-
         response.Dispose();
-        throw new ApiException(friendlyMessage, (int)response.StatusCode, code);
+        throw Fail(new ApiErrorInfo(statusCode, code, args, fieldErrors));
     }
+
+    private ApiException Fail(ApiErrorInfo error) =>
+        new(errorMessages.GetMessage(error), error.StatusCode, error.Code);
 }

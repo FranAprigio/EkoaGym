@@ -2,7 +2,7 @@ namespace EkoaGym.Mobile.Models;
 
 public record LoginRequest(string Email, string Password);
 
-public record RegisterRequest(string Email, string Password, string Name);
+public record RegisterRequest(string Email, string Password, string Name, string? PreferredLanguage = null);
 
 public record RefreshRequest(string RefreshToken);
 

@@ -19042,6 +19042,13 @@ namespace EkoaGym.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("PreferredLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("en");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 

@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using EkoaGym.Application.Auth;
 using EkoaGym.Application.Common.Configuration;
 using EkoaGym.Application.Common.Exceptions;
+using EkoaGym.Domain.Constants;
 using EkoaGym.Domain.Entities;
 using EkoaGym.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -36,6 +37,7 @@ public class AuthService(
             Id = Guid.NewGuid(),
             Email = normalizedEmail,
             Name = request.Name.Trim(),
+            PreferredLanguage = SupportedLanguages.Normalize(request.PreferredLanguage) ?? SupportedLanguages.Default,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
